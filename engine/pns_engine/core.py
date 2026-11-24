@@ -189,7 +189,9 @@ class PNSEngine:
 
     def delete_project(self, pid: str) -> None:
         self.store.x("DELETE FROM scene_audio WHERE project_id=?", (pid,))
+        self.store.x("DELETE FROM kv WHERE key IN (?,?)", (f"podcast:{pid}", f"interactive:{pid}"))
         self.store.delete_project(pid)
+        shutil.rmtree(self.s.data_dir / "podcasts" / pid, ignore_errors=True)
 
     def _bind(self, pid: str, sid: str, mode: str, asset_id: str, dur: int, spoken_hash: str | None,
               info: dict | None) -> None:

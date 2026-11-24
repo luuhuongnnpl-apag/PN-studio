@@ -11,9 +11,14 @@ import lecture from "./views/lecture.js";
 import video from "./views/video.js";
 import publish from "./views/publish.js";
 import settings from "./views/settings.js";
+import image from "./views/image.js";
+import audio from "./views/audio.js";
+import content from "./views/content.js";
+import podcast from "./views/podcast.js";
+import interactive from "./views/interactive.js";
 import { unavailable, needEngine } from "./views/unavailable.js";
 
-const VIEWS = { "": home, dashboard, projects, media, voice, lecture, video, publish, settings };
+const VIEWS = { "": home, dashboard, projects, media, voice, lecture, video, publish, settings, image, audio, content, podcast, interactive };
 let cleanup = null;
 
 function buildNav() {

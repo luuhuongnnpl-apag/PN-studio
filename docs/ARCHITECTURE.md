@@ -25,6 +25,7 @@ Cùng một mã `web/` chạy hai chế độ: `api.js` chỉ coi là có Engine
 | `textnorm.py` | Từ điển viết tắt + đọc số tiếng Việt (Điều/khoản, ngày, tiền, %, số hiệu văn bản) |
 | `tts.py` | Bộ chuyển VieNeu (`Vieneu(mode, backend="onnx", precision)` → `infer(text, ref_audio)`), chia đoạn ≤400 ký tự, cache theo hash |
 | `render.py` | Khung hình letterbox + nhãn AI, clip từng cảnh, ghép MP4 (+faststart), SRT |
+| `studios.py` | Image (crop/resize/ảnh bìa), Audio (dạng sóng, cắt/fade/ghép), Content (tách kịch bản, rà soát viện dẫn), Podcast (MP3 + chương ID3 + RSS item), Interactive (câu hỏi theo mốc, trình phát `templates/interactive_player.html`) |
 | `jobs.py` | Một luồng worker: một job CPU tại một thời điểm, tiến độ, hủy (kill tiến trình con), lỗi rõ ràng |
 
 ### Bộ nhớ đệm và vô hiệu hóa (A08)
@@ -52,6 +53,11 @@ Caption { startMs, endMs, text }      Job { id, projectId, sceneId, type, status
 Render  { id, projectId, projectRevision, quality, resolution, durationMs, timeline[], aiNarration, approval }
 Publication (publication.json) { projectId, revision, renderId, videoPath, captionPath, approvedBy, approvedAt, aiNarration, sources[], target }
 ```
+Cấu hình studio theo dự án lưu ở bảng `kv` (không nằm trong tài liệu dự án để tự lưu của Lecture Studio không ghi đè):
+`podcast:<pid>` { title, description, author, coverAssetId, introAssetId, outroAssetId, gapMs, chapters, audioBaseUrl } —
+tập podcast ở `podcasts/<pid>/pe_*/episode.json`; `interactive:<pid>` { renderId, questions[{id, atMs, text, options[2..6], correct, explain}], requireCorrect, showExplain }.
+Xóa dự án dọn cả hai. Ảnh bìa/âm thanh được cấu hình podcast tham chiếu được tính là «đang dùng» (không xóa được).
+
 Ghi dự án dùng kiểm tra `revision` (409 khi lệch). Thứ tự cảnh = thứ tự mảng; ID không phụ thuộc vị trí.
 
 ## Liên thông PNL / PND

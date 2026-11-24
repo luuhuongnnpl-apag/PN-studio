@@ -1,4 +1,4 @@
-// Danh mục phân hệ PNS. status: ready (dùng được ngay với Engine) | p1 | p2 (chưa khả dụng).
+// Danh mục phân hệ PNS. status: ready (dùng được ngay với Engine) | p2 (chưa khả dụng).
 const I = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 
 export const ICONS = {
@@ -26,21 +26,16 @@ export const MODULES = [
   { id: "lecture", group: "Studio", name: "Lecture Studio", status: "ready", desc: "Video bài giảng từ PDF/PPTX: cảnh, lời giảng, nguồn, phụ đề." },
   { id: "voice", group: "Studio", name: "Voice Studio", status: "ready", desc: "Giọng thật, giọng AI cá nhân (VieNeu, CPU), từ điển đọc luật." },
   { id: "video", group: "Studio", name: "Video Studio", status: "ready", desc: "Dòng thời gian, kết xuất MP4 1080p/720p và phụ đề SRT." },
-  { id: "audio", group: "Studio", name: "Audio Studio", status: "p1", desc: "Thu, cắt, fade, chuẩn hóa âm thanh theo đoạn." },
-  { id: "content", group: "Studio", name: "Content Studio", status: "p1", desc: "Soạn kịch bản có nguồn; AI là tùy chọn, không tự bịa điều luật." },
-  { id: "image", group: "Studio", name: "Image Studio", status: "p1", desc: "Cắt, đổi kích thước, mẫu thiết kế, ảnh bìa video." },
-  { id: "podcast", group: "Studio", name: "Podcast Studio", status: "p1", desc: "Tập podcast từ bài giảng hoặc kịch bản đối thoại." },
+  { id: "audio", group: "Studio", name: "Audio Studio", status: "ready", desc: "Ghép nhiều đoạn, cắt đầu/cuối, fade, âm lượng, chuẩn hóa EBU R128." },
+  { id: "content", group: "Studio", name: "Content Studio", status: "ready", desc: "Nhập kịch bản theo cảnh kèm nguồn – căn cứ; rà soát viện dẫn điều luật." },
+  { id: "image", group: "Studio", name: "Image Studio", status: "ready", desc: "Cắt theo tỷ lệ, đổi kích thước, xoay; ảnh bìa bài giảng theo nhận diện." },
+  { id: "podcast", group: "Studio", name: "Podcast Studio", status: "ready", desc: "Tập podcast từ âm thanh các cảnh: chương mục, ảnh bìa, MP3, mục RSS." },
   { id: "avatar", group: "Studio", name: "Avatar Studio", status: "p2", desc: "Người dẫn ảo trên cơ sở tự nguyện, có nhãn AI." },
-  { id: "interactive", group: "Studio", name: "Interactive Studio", status: "p2", desc: "Câu hỏi tương tác theo mốc thời gian (kiểu H5P)." },
+  { id: "interactive", group: "Studio", name: "Interactive Studio", status: "ready", desc: "Câu hỏi trắc nghiệm tự dừng theo mốc video; gói HTML độc lập." },
   { id: "publish", group: "Phát hành", name: "Trung tâm xuất bản", status: "ready", desc: "Duyệt bản kết xuất, phiên bản, gói xuất cho PNL/PND." },
   { id: "settings", group: "Phát hành", name: "Cài đặt", status: "ready", desc: "Engine, lưu trữ, giọng AI, liên kết PNL/PND, sao lưu." },
 ];
 
 export const PLANS = {
-  audio: ["Thu âm nhiều đoạn, cắt đầu/cuối, fade in/out", "Chuẩn hóa âm lượng EBU R128 (đã có trong Engine, chưa có giao diện biên tập)", "Biên tập theo transcript (Whisper CPU)"],
-  content: ["Kịch bản từng cảnh kèm nguồn/căn cứ", "Nhập kịch bản từ ChatGPT/Claude (đã làm được qua ô Lời giảng của Lecture Studio)", "Đánh dấu cần kiểm chứng, không tự sinh điều luật"],
-  image: ["Cắt, đổi kích thước theo tỷ lệ 16:9, 1:1, 9:16", "Mẫu ảnh bìa bài giảng theo nhận diện Phúc Nguyên", "Xuất PNG/JPG"],
-  podcast: ["Ghép giọng thật/AI thành tập audio", "Ảnh bìa, mô tả, chương mục", "Xuất MP3 và RSS (sau khi duyệt)"],
-  avatar: ["Chỉ dùng hình ảnh của người đã đồng ý bằng văn bản", "Gắn nhãn AI bắt buộc", "Đánh giá model mã nguồn mở chạy CPU trước khi cam kết"],
-  interactive: ["Câu hỏi trắc nghiệm theo mốc thời gian video", "Xuất gói tương thích H5P", "Không thay đổi hệ thống khảo thí của PNL"],
+  avatar: ["Chỉ dùng hình ảnh của người đã đồng ý bằng văn bản", "Gắn nhãn AI bắt buộc trên khung hình", "Cần đánh giá model mã nguồn mở chạy được trên CPU máy cá nhân trước khi cam kết — chưa có model đạt chất lượng nên chưa mở"],
 };

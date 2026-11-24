@@ -28,9 +28,20 @@ Chi tiết: [docs/INSTALL_WINDOWS.md](docs/INSTALL_WINDOWS.md).
 ## Quy trình video bài giảng (P0 — đã chạy được)
 PDF/PPTX → mỗi trang một cảnh (giữ tỷ lệ) → lời giảng + nguồn/căn cứ từng cảnh → giọng thật (tải lên/thu micro) hoặc giọng AI từ mẫu giọng có xác nhận quyền → phụ đề tự động/sửa tay → MP4 1080p H.264/AAC + SRT → duyệt → gói phát hành cho PNL/PND.
 
+## Các studio mở rộng (v0.2.0)
+| Studio | Làm được |
+|---|---|
+| Image | Cắt theo tỷ lệ 16:9/4:3/1:1/4:5/9:16 (kéo khung), phóng, xoay, lật, đổi kích thước, PNG/JPG; ảnh bìa bài giảng 3 mẫu × 3 kích thước, chữ tiếng Việt tự ngắt dòng |
+| Audio | Ghép nhiều đoạn (thư viện/thu micro), dạng sóng, cắt đầu/cuối, fade, âm lượng dB, khoảng lặng, chuẩn hóa −16 LUFS |
+| Content | Dán kịch bản từ Word/ChatGPT/Claude → tách cảnh, nguồn – căn cứ, cờ «Cần kiểm chứng»; ghép vào cảnh giữ slide/âm thanh; rà soát viện dẫn Điều/số hiệu văn bản chưa ghi căn cứ; ước thời lượng; xuất `.md`; lệnh mẫu cho AI |
+| Podcast | Tập MP3 từ âm thanh các cảnh + mở đầu/kết thúc, chương mục ID3, ảnh bìa nhúng, nhãn AI; duyệt → gói `audio + cover + episode.json + rss-item.xml + chapters.json` |
+| Interactive | Câu hỏi trắc nghiệm theo mốc video (bắt buộc đúng/giải thích); xem thử như người học; gói `index.html` độc lập + MP4 + VTT (chỉ từ bản 1080p đã duyệt) |
+
+Mọi thao tác không sửa file gốc: kết quả lưu thành tài sản mới trong Thư viện media.
+
 ## Trạng thái
-- Phân hệ sẵn sàng: Bảng điều khiển, Dự án, Thư viện media, Lecture Studio, Voice Studio, Video Studio, Trung tâm xuất bản, Cài đặt.
-- Chưa khả dụng (ghi rõ trên giao diện, không có nút giả): Audio, Content, Image, Podcast (P1); Avatar, Interactive (P2).
+- Phân hệ sẵn sàng (v0.2.0): Bảng điều khiển, Dự án, Thư viện media, Lecture Studio, Voice Studio, Video Studio, **Audio Studio, Content Studio, Image Studio, Podcast Studio, Interactive Studio**, Trung tâm xuất bản, Cài đặt.
+- Chưa khả dụng (ghi rõ trên giao diện, không có nút giả): Avatar Studio (P2 — chưa có model mã nguồn mở chạy CPU đạt chất lượng).
 - Kết quả kiểm thử thực tế: [docs/TEST_REPORT.md](docs/TEST_REPORT.md). Việc còn lại: [docs/ROADMAP.md](docs/ROADMAP.md).
 - Kiến trúc, bảo mật, hợp đồng dữ liệu, liên thông PNL/PND: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Triển khai staging Firebase và rollback: [docs/DEPLOY_STAGING.md](docs/DEPLOY_STAGING.md).

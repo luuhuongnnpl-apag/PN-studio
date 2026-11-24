@@ -7,7 +7,7 @@ export function unavailable(view, mod) {
     h("div", { class: "studio-card" }, h("div", { class: "ico", html: ICONS[mod.id] })),
     h("div", {}, h("h1", {}, mod.name), h("p", {}, mod.desc))),
   h("div", { class: "notice warn" }, h("strong", {}, `Chưa khả dụng — dự kiến giai đoạn ${mod.status.toUpperCase()}. `),
-    "Phân hệ này chưa được lập trình nên không có thao tác nào ở đây. Lecture Studio, Voice Studio và Video Studio đã dùng được."),
+    "Phân hệ này chưa được lập trình nên không có thao tác nào ở đây. Các studio còn lại đều đã dùng được với PNS Engine."),
   h("div", { class: "card" }, h("h3", {}, "Phạm vi dự kiến"),
     h("ul", {}, (PLANS[mod.id] || []).map((x) => h("li", {}, x)))));
 }

@@ -34,3 +34,17 @@ Chưa dùng PDF Thừa kế thật và mẫu `PNL_Voice_001.wav` (chủ sở h�
 - Phụ đề tự động: mốc theo câu, **ước lượng** theo tỷ lệ ký tự (chưa căn chỉnh từng từ); có chế độ sửa tay.
 - Tốc độ đọc giọng AI chưa có điều chỉnh (chỉ bật khi có xử lý thật).
 - Chưa đo hiệu năng CPU của VieNeu trên máy mục tiêu; không đặt ngưỡng giả định.
+
+## Bổ sung v0.2.0 (25/11/2026) — 5 studio mở rộng
+- `pytest engine/tests` — 18/18 PASS (11 cũ + 7 mới trong `test_studios.py`).
+- `tools/ui_smoke_studios.py` — luồng Image → Audio → Content → Podcast → kết xuất → Interactive (xem thử, trả lời câu hỏi) trên Chrome 1440×900, 0 lỗi console.
+
+| Studio | Kết quả | Bằng chứng |
+|---|---|---|
+| Image | PASS | Cắt 1:1 → 512×512 JPG giữ ghi chú quyền sử dụng; xoay 90° đổi chiều; ảnh bìa navy/nền trắng/ảnh nền ở 16:9, 1:1, 9:16 đúng kích thước, đã soát bằng mắt chữ tiếng Việt không đè dải màu |
+| Audio | PASS | Dạng sóng 200 cột; ghép 2,0 s + 0,5 s lặng + 2,0 s = ~4,5 s; mốc cắt ngược, danh sách rỗng → 422 |
+| Content | PASS | Nhận «## Cảnh n:», «**Slide n – …**», «Cảnh n:», Markdown, khối «---»; bỏ phần mở đầu; ghép giữ slide; revision lệch → 409; rà soát phát hiện «Điều 12» chưa có trong căn cứ; xuất `.md` rồi nhập lại khớp |
+| Podcast | PASS | 1 s mở đầu + 3 s + 2 s, lặng 0,5 s → ~7 s MP3; 3 chương ID3 đọc được bằng FFmpeg; cảnh không âm thanh bị bỏ qua và báo; gói chỉ tải sau khi duyệt; URL không phải https bị loại |
+| Interactive | PASS | Câu thiếu phương án/đáp án → 422; trình phát dừng đúng mốc, chấm đúng/sai; nội dung `</script><script>` không chèn được mã; gói chỉ tải với bản đã duyệt |
+
+Giới hạn: chưa chạy trên Windows thật; nghe thử MP3 trên ứng dụng podcast thật chưa làm; Avatar Studio vẫn chưa mở.

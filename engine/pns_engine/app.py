@@ -5,12 +5,13 @@ import logging
 import secrets
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import media
+from . import media, studios
 from .config import WEB_DIR, Settings
 from .core import PNSEngine
 from .media import MediaError
@@ -289,6 +290,107 @@ def create_app(settings: Settings | None = None, extra_hosts: tuple[str, ...] = 
         else:
             raise HTTPException(404)
         return FileResponse(dst, media_type="image/jpeg")
+
+    # ---------------- Image Studio ----------------
+    @app.post("/api/image/transform")
+    def image_transform(body: dict = Body(...)):
+        return studios.image_transform(eng, body)
+
+    @app.post("/api/image/cover")
+    def image_cover(body: dict = Body(...)):
+        return studios.image_cover(eng, body)
+
+    # ---------------- Audio Studio ----------------
+    @app.get("/api/assets/{aid}/peaks")
+    def asset_peaks(aid: str, n: int = 800):
+        return studios.peaks(eng, aid, n)
+
+    @app.post("/api/audio/edit")
+    def audio_edit(body: dict = Body(...)):
+        return studios.audio_edit_job(eng, body)
+
+    # ---------------- Content Studio ----------------
+    @app.post("/api/content/parse")
+    def content_parse(body: dict = Body(...)):
+        return {"scenes": studios.parse_script(str(body.get("text", "")))}
+
+    @app.post("/api/projects/{pid}/content/apply")
+    def content_apply(pid: str, body: dict = Body(...)):
+        rev = body.get("revision")
+        return studios.apply_script(eng, pid, str(body.get("text", "")),
+                                    "append" if body.get("mode") == "append" else "merge",
+                                    rev if isinstance(rev, int) else None, bool(body.get("keepTitles")))
+
+    @app.get("/api/projects/{pid}/content/check")
+    def content_check(pid: str):
+        return studios.content_check(eng, pid)
+
+    @app.get("/api/projects/{pid}/script.md")
+    def content_export(pid: str):
+        p = need(eng.get_project(pid), "Không tìm thấy dự án")
+        stem = "".join(c if c.isalnum() else "-" for c in p["title"])[:60] or "kich-ban"
+        return Response(studios.export_script(p), media_type="text/markdown; charset=utf-8",
+                        headers={"Content-Disposition": f"attachment; filename=\"{stem.encode('ascii', 'ignore').decode() or 'kich-ban'}.md\"; "
+                                                        f"filename*=UTF-8''{quote(stem)}.md"})
+
+    # ---------------- Podcast Studio ----------------
+    @app.get("/api/projects/{pid}/podcast")
+    def podcast_cfg(pid: str):
+        return {"config": studios.podcast_config(eng, pid), "episodes": studios.podcast_episodes(eng, pid),
+                "format": "mp3" if studios.has_mp3() else "m4a"}
+
+    @app.put("/api/projects/{pid}/podcast")
+    def podcast_put(pid: str, body: dict = Body(...)):
+        return studios.set_podcast_config(eng, pid, body)
+
+    @app.post("/api/projects/{pid}/podcast/build")
+    def podcast_build(pid: str):
+        return studios.podcast_build_job(eng, pid)
+
+    @app.get("/api/projects/{pid}/podcasts/{eid}/{name}")
+    def podcast_file(pid: str, eid: str, name: str, download: bool = False):
+        d = need(studios.podcast_dir(eng, pid, eid), "Không tìm thấy tập podcast")
+        if name not in ("episode.mp3", "episode.m4a", "cover.jpg") or not (d / name).exists():
+            raise HTTPException(404)
+        mt = {"mp3": "audio/mpeg", "m4a": "audio/mp4", "jpg": "image/jpeg"}[name.rsplit(".", 1)[1]]
+        return FileResponse(d / name, media_type=mt, filename=name if download else None)
+
+    @app.post("/api/projects/{pid}/podcasts/{eid}/approval")
+    def podcast_approval(pid: str, eid: str, body: dict = Body(...)):
+        return studios.podcast_approval(eng, pid, eid, bool(body.get("approved")), str(body.get("approver", "")),
+                                        str(body.get("note", "")))
+
+    @app.delete("/api/projects/{pid}/podcasts/{eid}")
+    def podcast_delete(pid: str, eid: str):
+        d = need(studios.podcast_dir(eng, pid, eid), "Không tìm thấy tập podcast")
+        shutil.rmtree(d, ignore_errors=True)
+        return {"ok": True}
+
+    @app.post("/api/projects/{pid}/podcasts/{eid}/package")
+    def podcast_package(pid: str, eid: str):
+        path = studios.podcast_package(eng, pid, eid)
+        return FileResponse(path, filename=path.name, media_type="application/zip")
+
+    # ---------------- Interactive Studio ----------------
+    @app.get("/api/projects/{pid}/interactive")
+    def interactive_get(pid: str):
+        return studios.interactive_get(eng, pid)
+
+    @app.put("/api/projects/{pid}/interactive")
+    def interactive_put(pid: str, body: dict = Body(...)):
+        return studios.interactive_set(eng, pid, body)
+
+    @app.get("/api/projects/{pid}/interactive/preview")
+    def interactive_preview(pid: str):
+        return HTMLResponse(studios.interactive_preview(eng, pid), headers={
+            "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                                       "media-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'",
+            "Cache-Control": "no-store"})
+
+    @app.post("/api/projects/{pid}/interactive/package")
+    def interactive_package(pid: str):
+        path = studios.interactive_package(eng, pid)
+        return FileResponse(path, filename=path.name, media_type="application/zip")
 
     # ---------------- giọng ----------------
     @app.get("/api/voices")

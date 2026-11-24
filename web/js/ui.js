@@ -82,7 +82,7 @@ export const STATUS = { draft: "Bản nháp", review: "Chờ duyệt", approved:
 export const statusBadge = (s) => h("span", { class: `badge ${s === "approved" || s === "published" ? "ok" : s === "review" ? "warn" : ""}` }, STATUS[s] || s);
 
 export const JOB = { queued: "Đang chờ", running: "Đang chạy", done: "Hoàn tất", failed: "Lỗi", cancelled: "Đã hủy" };
-export const JOB_TYPE = { "import-slides": "Nhập slide", "scene-tts": "Giọng AI cảnh", "voice-test": "Thử giọng", render: "Kết xuất video" };
+export const JOB_TYPE = { "import-slides": "Nhập slide", "scene-tts": "Giọng AI cảnh", "voice-test": "Thử giọng", render: "Kết xuất video", "audio-edit": "Biên tập âm thanh", podcast: "Dựng podcast" };
 
 export function progressBar(frac) {
   return h("div", { class: "progress", role: "progressbar", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": Math.round(frac * 100) },
