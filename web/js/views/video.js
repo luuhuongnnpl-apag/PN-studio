@@ -13,7 +13,7 @@ export default async function video(view, args) {
 
   async function load() {
     if (!pid) { body.replaceChildren(h("div", { class: "empty" }, "Chọn dự án để kết xuất.")); return; }
-    const [p, renders, jobs] = await Promise.all([get(`/api/projects/${pid}`), get(`/api/projects/${pid}/renders`), get(`/api/jobs?projectId=${pid}`)]);
+    const [p, renders, jobs] = await Promise.all([get(`api/projects/${pid}`), get(`api/projects/${pid}/renders`), get(`api/jobs?projectId=${pid}`)]);
     ctx.setProject(p);
     const scenes = p.scenes.filter((s) => !s.excluded);
     const dur = (s) => s.audioMode === "none" ? s.silentDurationMs : (s.audioDurationMs || 0) + 850;
@@ -29,7 +29,7 @@ export default async function video(view, args) {
     const jobBox = h("div");
     const start = async (quality) => {
       try {
-        const job = await post(`/api/projects/${pid}/render`, { quality });
+        const job = await post(`api/projects/${pid}/render`, { quality });
         track(job, jobBox);
       } catch (e) { errToast(e); }
     };
@@ -51,7 +51,7 @@ export default async function video(view, args) {
   }
 
   async function track(job, box) {
-    const cancel = h("button", { class: "btn danger sm", onclick: () => post(`/api/jobs/${job.id}/cancel`) }, "Hủy");
+    const cancel = h("button", { class: "btn danger sm", onclick: () => post(`api/jobs/${job.id}/cancel`) }, "Hủy");
     const j = await waitJob(job, (x) => alive && box.replaceChildren(h("div", { class: "row" }, h("small", {}, x.message || ""), h("span", { class: "spacer" }), cancel), progressBar(x.progress)));
     if (!alive) return;
     if (j.status === "done") { toast(`Đã kết xuất ${j.result.resolution} (${fmtDur(j.result.durationMs)}, dùng lại ${j.result.clipsReused} cảnh)`, "ok"); load(); }
@@ -63,7 +63,7 @@ export default async function video(view, args) {
 }
 
 export function renderCard(p, r, reload, extra) {
-  const base = `/api/projects/${p.id}/renders/${r.id}`;
+  const base = `api/projects/${p.id}/renders/${r.id}`;
   return h("div", { class: "card", style: { marginBottom: "14px" } },
     h("div", { class: "row" }, h("h3", { style: { margin: 0 } }, r.quality === "final" ? "Bản 1080p" : "Bản xem trước 720p"),
       r.approval ? h("span", { class: "badge ok" }, `Đã duyệt bởi ${r.approval.approvedBy}`) : h("span", { class: "badge" }, "Chưa duyệt"),

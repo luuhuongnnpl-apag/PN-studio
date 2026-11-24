@@ -4,17 +4,45 @@
       "target": "pns",
       "public": "web",
       "cleanUrls": true,
-      "ignore": ["**/.*"],
+      "ignore": [
+        "**/.*"
+      ],
       "headers": [
         {
           "source": "**",
           "headers": [
-            {"key": "Content-Security-Policy", "value": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"},
-            {"key": "X-Content-Type-Options", "value": "nosniff"},
-            {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"}
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob: data:; frame-ancestors 'none'; base-uri 'none'"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            }
           ]
         },
-        {"source": "**/*.@(js|css|svg)", "headers": [{"key": "Cache-Control", "value": "public, max-age=300"}]}
+        {
+          "source": "**/*.@(js|css|svg)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=300"
+            }
+          ]
+        },
+        {
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        }
       ]
     }
   ]

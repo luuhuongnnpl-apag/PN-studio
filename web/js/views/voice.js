@@ -16,7 +16,7 @@ export default async function voice(view) {
 }
 
 async function voices(box) {
-  const { voices: list, engine: st } = await get("/api/voices");
+  const { voices: list, engine: st } = await get("api/voices");
   const status = st.installed
     ? h("div", { class: "notice ok" }, h("strong", {}, `${st.engine} ${st.version || ""} đã cài. `),
       `Cấu hình: ${st.config.mode}, ${st.config.precision}. `, st.loaded ? "Model đã nạp." : "Model sẽ nạp ở lần sinh giọng đầu tiên (lần đầu tải trọng số từ Hugging Face).",
@@ -48,7 +48,7 @@ async function voices(box) {
       if (!f.owner.value.trim()) return toast("Nhập tên người sở hữu giọng", "err");
       try {
         prog.replaceChildren(progressBar(0.3));
-        await upload("/api/voices", file, { name: f.name.value, owner: f.owner.value, consent: "yes",
+        await upload("api/voices", file, { name: f.name.value, owner: f.owner.value, consent: "yes",
           startMs: Math.round(+f.start.value * 1000), endMs: Math.round(+f.end.value * 1000) });
         toast("Đã lưu mẫu giọng", "ok"); voices(box);
       } catch (e) { prog.replaceChildren(); errToast(e); }
@@ -66,28 +66,28 @@ function voiceCard(v, st, reload) {
     h("div", { class: "row" }, h("h3", { style: { margin: 0 } }, v.name), v.meta.approved ? h("span", { class: "badge ok" }, "Đã duyệt độ giống") : h("span", { class: "badge warn" }, "Chưa duyệt"),
       h("span", { class: "spacer" }), h("small", {}, fmtDur(v.meta.durationMs))),
     h("small", {}, `Chủ sở hữu: ${v.consent.owner || "—"} · xác nhận quyền ${fmtTime(v.consent.confirmedAt)}`),
-    h("audio", { controls: true, src: `/api/voices/${v.id}/sample`, preload: "none" }), warn,
+    h("audio", { controls: true, src: `api/voices/${v.id}/sample`, preload: "none" }), warn,
     h("label", {}, "Thử giọng AI với câu mẫu (số và viết tắt được đọc theo từ điển)"), text,
     h("div", { class: "row", style: { marginTop: "8px" } },
       h("button", { class: "btn sm", disabled: !st.installed, title: st.installed ? "" : "Chưa cài VieNeu-TTS", onclick: async (e) => {
         e.target.disabled = true;
         try {
-          const job = await post(`/api/voices/${v.id}/test`, { text: text.value });
+          const job = await post(`api/voices/${v.id}/test`, { text: text.value });
           const j = await waitJob(job, (x) => out.replaceChildren(progressBar(x.progress), h("small", {}, x.message || "")));
           if (j.status !== "done") { out.replaceChildren(h("div", { class: "notice err" }, "Không sinh được giọng: ", j.error || j.status)); return; }
           const r = j.result;
-          out.replaceChildren(h("audio", { controls: true, src: `/api/voices/${v.id}/tests/${r.file}` }),
+          out.replaceChildren(h("audio", { controls: true, src: `api/voices/${v.id}/tests/${r.file}` }),
             h("small", {}, `Xử lý ${r.seconds}s cho ${r.audioSeconds}s âm thanh · RTF ${r.rtf}${r.rssMB ? ` · RAM ${r.rssMB} MB` : ""} · ${r.chunks} đoạn`),
             h("details", {}, h("summary", {}, "Văn bản đã đọc"), h("p", {}, r.spoken)));
         } catch (er) { errToast(er); } finally { e.target.disabled = !st.installed; }
       } }, "Sinh câu thử"),
-      h("button", { class: "btn ghost sm", onclick: async () => { await patch(`/api/voices/${v.id}`, { approved: !v.meta.approved }); reload(); } }, v.meta.approved ? "Bỏ duyệt" : "Duyệt độ giống"),
-      h("button", { class: "btn danger sm", onclick: async () => { if (await confirmBox("Xóa mẫu giọng?", "Mẫu giọng và các câu thử sẽ bị xóa khỏi máy. Âm thanh đã tạo trong dự án vẫn giữ.", "Xóa", true)) { await del(`/api/voices/${v.id}`); reload(); } } }, "Xóa")),
+      h("button", { class: "btn ghost sm", onclick: async () => { await patch(`api/voices/${v.id}`, { approved: !v.meta.approved }); reload(); } }, v.meta.approved ? "Bỏ duyệt" : "Duyệt độ giống"),
+      h("button", { class: "btn danger sm", onclick: async () => { if (await confirmBox("Xóa mẫu giọng?", "Mẫu giọng và các câu thử sẽ bị xóa khỏi máy. Âm thanh đã tạo trong dự án vẫn giữ.", "Xóa", true)) { await del(`api/voices/${v.id}`); reload(); } } }, "Xóa")),
     out);
 }
 
 async function dictionary(box) {
-  let entries = await get("/api/dictionary");
+  let entries = await get("api/dictionary");
   const tbody = h("tbody");
   const draw = () => tbody.replaceChildren(...entries.map((e, i) => h("tr", {},
     h("td", {}, h("input", { type: "text", value: e.written, "aria-label": "Viết", oninput: (ev) => (e.written = ev.target.value) })),
@@ -96,14 +96,14 @@ async function dictionary(box) {
   draw();
   const src = h("textarea", { style: { minHeight: "90px" }, value: "Theo Điều 612 BLDS 2015, khoản 1 Điều 651; mức 1.500.000 đồng (2,5%). Luật 91/2015/QH13 có hiệu lực từ 01/01/2017." });
   const outp = h("p", { class: "notice info" });
-  const prev = async () => { outp.textContent = (await post("/api/dictionary/preview", { text: src.value })).spoken; };
+  const prev = async () => { outp.textContent = (await post("api/dictionary/preview", { text: src.value })).spoken; };
   box.replaceChildren(h("div", { class: "grid g2", style: { alignItems: "start" } },
     h("div", { class: "card" }, h("h2", {}, "Từ điển viết tắt"),
       h("p", { class: "muted" }, "Văn bản gốc (phụ đề) giữ nguyên; chỉ văn bản phát âm được chuyển đổi. Số, Điều/khoản, ngày tháng, số hiệu văn bản được đọc tự động."),
       h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Viết"), h("th", {}, "Đọc thành"), h("th", {}))), tbody),
       h("div", { class: "row", style: { marginTop: "10px" } },
         h("button", { class: "btn ghost sm", onclick: () => { entries.push({ written: "", spoken: "" }); draw(); tbody.lastChild.querySelector("input").focus(); } }, "+ Thêm dòng"),
-        h("button", { class: "btn sm", onclick: async () => { try { entries = await put("/api/dictionary", entries); draw(); toast("Đã lưu từ điển", "ok"); prev(); } catch (e) { errToast(e); } } }, "Lưu từ điển"))),
+        h("button", { class: "btn sm", onclick: async () => { try { entries = await put("api/dictionary", entries); draw(); toast("Đã lưu từ điển", "ok"); prev(); } catch (e) { errToast(e); } } }, "Lưu từ điển"))),
     h("div", { class: "card" }, h("h2", {}, "Xem trước cách đọc"), src, h("button", { class: "btn ghost sm", style: { margin: "8px 0" }, onclick: prev }, "Chuyển đổi"), outp)));
   prev();
 }

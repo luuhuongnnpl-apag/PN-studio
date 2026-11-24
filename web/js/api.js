@@ -2,15 +2,37 @@
 const token = document.querySelector('meta[name="pns-token"]')?.content || "";
 const local = ["127.0.0.1", "localhost"].includes(location.hostname);
 
-export const engine = { available: false, health: null, token };
+// mode: "engine" (PNS Engine cục bộ) | "browser" (xử lý ngay trong trình duyệt) | "web" (chỉ giới thiệu)
+export const engine = { available: false, mode: "web", health: null, token };
+let backend = null;
 
 export async function detectEngine() {
-  if (!local || !token) return false;
+  if (local && token) {
+    try {
+      engine.mode = "engine";
+      engine.health = await get("api/health");
+      engine.available = true;
+      return true;
+    } catch { engine.mode = "web"; }
+  }
   try {
-    engine.health = await get("/api/health");
+    if (!("serviceWorker" in navigator) || !window.indexedDB) throw new Error("Trình duyệt không hỗ trợ");
+    await navigator.serviceWorker.register("sw.js", { scope: "./" });
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller)
+      await new Promise((r) => { navigator.serviceWorker.addEventListener("controllerchange", r, { once: true }); setTimeout(r, 4000); });
+    backend = await import("./local/backend.js");
+    navigator.storage?.persist?.().catch(() => {});
+    engine.mode = "browser";
+    engine.health = await backend.handle("GET", "api/health");
     engine.available = true;
-  } catch { engine.available = false; }
+  } catch (e) { console.warn("Không bật được chế độ trình duyệt:", e); engine.mode = "web"; }
   return engine.available;
+}
+
+async function local_(method, url, body) {
+  try { return await backend.handle(method, url, body); }
+  catch (e) { throw new ApiError(e.message || String(e), e.status || 422); }
 }
 
 export class ApiError extends Error {
@@ -18,6 +40,7 @@ export class ApiError extends Error {
 }
 
 async function call(method, url, body, isForm) {
+  if (engine.mode === "browser") return local_(method, url, body);
   const opts = { method, headers: { "X-PNS-Token": token } };
   if (body !== undefined) {
     if (isForm) opts.body = body;
@@ -43,6 +66,7 @@ export const postForm = (u, fd) => call("POST", u, fd, true);
 
 // Tải file lên có tiến độ (XHR để theo dõi upload)
 export function upload(url, file, fields = {}, onProgress = () => {}) {
+  if (engine.mode === "browser") return local_("POST", url, { file, ...fields });
   return new Promise((resolve, reject) => {
     const fd = new FormData();
     fd.append("file", file, file.name);
@@ -64,7 +88,7 @@ export function upload(url, file, fields = {}, onProgress = () => {}) {
 // Theo dõi job tới khi xong
 export async function waitJob(job, onTick = () => {}) {
   for (;;) {
-    const j = await get(`/api/jobs/${job.id}`);
+    const j = await get(`api/jobs/${job.id}`);
     onTick(j);
     if (["done", "failed", "cancelled"].includes(j.status)) return j;
     await new Promise((r) => setTimeout(r, 700));

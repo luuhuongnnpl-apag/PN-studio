@@ -10,7 +10,7 @@ export default async function dashboard(view) {
     h("a", { class: "btn gold", href: "#/projects?new" }, "+ Dự án mới"), h("a", { class: "btn ghost", href: "#/media" }, "Tải media lên")), box);
 
   async function load() {
-    const d = await get("/api/dashboard");
+    const d = await get("api/dashboard");
     const u = d.usage;
     const total = u.assets + u.voices + u.cache + u.renders;
     box.replaceChildren(

@@ -20,7 +20,7 @@ export async function newProjectDialog() {
     { label: "Tạo dự án", value: async () => {
       if (!f.title.value.trim()) { toast("Nhập tên dự án", "err"); return null; }
       try {
-        return await post("/api/projects", { title: f.title.value.trim(), kind: f.kind.value,
+        return await post("api/projects", { title: f.title.value.trim(), kind: f.kind.value,
           course: { course: f.course.value, chapter: f.chapter.value, lesson: f.lesson.value }, scenes: [] });
       } catch (e) { errToast(e); return null; }
     } }]);
@@ -39,7 +39,7 @@ export default async function projects(view, _args, query) {
   const imp = h("input", { type: "file", accept: ".pnsproj,.zip", hidden: true, onchange: async () => {
     const file = imp.files[0]; imp.value = "";
     if (!file) return;
-    try { const p = await upload("/api/projects/import", file); toast(`Đã khôi phục «${p.title}»`, "ok"); load(); } catch (e) { errToast(e); }
+    try { const p = await upload("api/projects/import", file); toast(`Đã khôi phục «${p.title}»`, "ok"); load(); } catch (e) { errToast(e); }
   } });
 
   view.append(h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Dự án"), h("p", {}, "Mỗi dự án có ID riêng, dùng xuyên suốt các studio")),
@@ -58,7 +58,7 @@ export default async function projects(view, _args, query) {
   async function load() {
     const my = ++seq;
     const qs = new URLSearchParams({ q: state.q, status: state.status, kind: state.kind, archived: state.archived });
-    const data = await get(`/api/projects?${qs}`);
+    const data = await get(`api/projects?${qs}`);
     if (my !== seq) return;
     if (!data.length) { list.replaceChildren(h("div", { class: "empty" }, state.archived ? "Kho lưu trữ trống." : "Chưa có dự án phù hợp.")); return; }
     list.replaceChildren(h("div", { class: "cards" }, data.map(card)));
@@ -66,7 +66,7 @@ export default async function projects(view, _args, query) {
 
   function card(p) {
     const open = () => { ctx.setProject(p); location.hash = `#/lecture/${p.id}`; };
-    const thumb = h("div", { class: "thumb", style: p.cover ? { backgroundImage: `url(/api/assets/${p.cover}/thumb)` } : {} }, p.cover ? "" : KINDS[p.kind]);
+    const thumb = h("div", { class: "thumb", style: p.cover ? { backgroundImage: `url(api/assets/${p.cover}/thumb)` } : {} }, p.cover ? "" : KINDS[p.kind]);
     return h("div", { class: "card pcard" }, thumb,
       h("div", { class: "body" },
         h("div", { class: "row" }, statusBadge(p.status), h("span", { class: "badge" }, KINDS[p.kind] || p.kind)),
@@ -75,9 +75,9 @@ export default async function projects(view, _args, query) {
         h("small", {}, `${p.sceneCount} cảnh · cập nhật ${fmtTime(p.updatedAt)}`),
         h("div", { class: "acts" },
           !p.archived && h("button", { class: "btn sm", onclick: open }, "Mở"),
-          h("button", { class: "btn ghost sm", onclick: async () => { try { await post(`/api/projects/${p.id}/duplicate`); toast("Đã nhân bản", "ok"); load(); } catch (e) { errToast(e); } } }, "Nhân bản"),
-          h("button", { class: "btn ghost sm", onclick: async () => { try { saveBlob(await get(`/api/projects/${p.id}/export`), `${p.title}.pnsproj`); } catch (e) { errToast(e); } } }, "Sao lưu"),
-          h("button", { class: "btn ghost sm", onclick: async () => { await post(`/api/projects/${p.id}/archive`, { archived: !p.archived }); load(); } }, p.archived ? "Khôi phục" : "Lưu trữ"),
+          h("button", { class: "btn ghost sm", onclick: async () => { try { await post(`api/projects/${p.id}/duplicate`); toast("Đã nhân bản", "ok"); load(); } catch (e) { errToast(e); } } }, "Nhân bản"),
+          h("button", { class: "btn ghost sm", onclick: async () => { try { saveBlob(await get(`api/projects/${p.id}/export`), `${p.title}.pnsproj`); } catch (e) { errToast(e); } } }, "Sao lưu"),
+          h("button", { class: "btn ghost sm", onclick: async () => { await post(`api/projects/${p.id}/archive`, { archived: !p.archived }); load(); } }, p.archived ? "Khôi phục" : "Lưu trữ"),
           h("button", { class: "btn danger sm", onclick: () => remove(p) }, "Xóa"))));
   }
 
@@ -90,7 +90,7 @@ export default async function projects(view, _args, query) {
       { label: "Xóa vĩnh viễn", cls: "danger", value: () => inp.value.trim() === p.title.trim() ? true : (toast("Tên không khớp", "err"), null) }]);
     if (ok !== true) return;
     try {
-      await del(`/api/projects/${p.id}?confirm=${p.id}`);
+      await del(`api/projects/${p.id}?confirm=${p.id}`);
       if (ctx.project()?.id === p.id) ctx.setProject(null);
       toast("Đã xóa dự án", "ok"); load();
     } catch (e) { errToast(e); }

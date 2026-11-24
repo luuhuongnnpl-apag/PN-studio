@@ -13,7 +13,7 @@ export default async function lecture(view, args) {
   const pid = args[0] || ctx.project()?.id;
   if (!pid) return chooser(view);
   let project;
-  try { project = await get(`/api/projects/${pid}`); }
+  try { project = await get(`api/projects/${pid}`); }
   catch (e) { if (ctx.project()?.id === pid) ctx.setProject(null); return chooser(view, e.message); }
   if (!args[0]) { history.replaceState(null, "", `#/lecture/${pid}`); }
   ctx.setProject(project);
@@ -22,7 +22,7 @@ export default async function lecture(view, args) {
 }
 
 async function chooser(view, err) {
-  const list = (await get("/api/projects?kind=lecture")).slice(0, 30);
+  const list = (await get("api/projects?kind=lecture")).slice(0, 30);
   view.append(h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Lecture Studio"), h("p", {}, "Chọn dự án bài giảng để biên tập"))),
     err && h("div", { class: "notice err" }, err),
     h("div", { class: "row", style: { marginBottom: "14px" } }, h("button", { class: "btn gold", onclick: async () => {
@@ -91,7 +91,7 @@ class Editor {
     this.saving = true; this.setState("Đang lưu…");
     const sent = this.snapshot();
     try {
-      const r = await put(`/api/projects/${this.p.id}`, { ...JSON.parse(sent), revision: this.p.revision });
+      const r = await put(`api/projects/${this.p.id}`, { ...JSON.parse(sent), revision: this.p.revision });
       this.p.revision = r.revision;
       this.mergeComputed(r);
       this.dirty = this.snapshot() !== sent;
@@ -115,7 +115,7 @@ class Editor {
   }
 
   async refresh() {
-    const r = await get(`/api/projects/${this.p.id}`);
+    const r = await get(`api/projects/${this.p.id}`);
     if (this.dirty) { this.p.revision = r.revision; this.mergeComputed(r); }
     else { this.p = r; this.lastSnap = this.snapshot(); }
     if (!this.scene()) this.sel = this.p.scenes[0]?.id || null;
@@ -132,7 +132,7 @@ class Editor {
   showConflict() {
     this.setState("Xung đột");
     this.banner.replaceChildren(h("div", { class: "notice err", style: { margin: 0 } }, "Dự án đã được thay đổi ở tab/cửa sổ khác. ",
-      h("button", { class: "btn sm", onclick: async () => { this.conflict = false; this.dirty = false; this.banner.replaceChildren(); this.p = await get(`/api/projects/${this.p.id}`); this.undo = []; this.redo = []; this.lastSnap = this.snapshot(); this.draw(); this.setState("Đã tải lại"); } }, "Tải bản mới nhất (bỏ thay đổi chưa lưu)")));
+      h("button", { class: "btn sm", onclick: async () => { this.conflict = false; this.dirty = false; this.banner.replaceChildren(); this.p = await get(`api/projects/${this.p.id}`); this.undo = []; this.redo = []; this.lastSnap = this.snapshot(); this.draw(); this.setState("Đã tải lại"); } }, "Tải bản mới nhất (bỏ thay đổi chưa lưu)")));
   }
 
   setState(t) { this.stateEl.textContent = t; }
@@ -190,7 +190,7 @@ class Editor {
           ondragover: (e) => { e.preventDefault(); b.classList.add("dropafter"); },
           ondragleave: () => b.classList.remove("dropafter"),
           ondrop: (e) => { e.preventDefault(); b.classList.remove("dropafter"); this.reorder(e.dataTransfer.getData("text/plain"), i); } },
-        h("div", { class: "st", style: s.slideAssetId ? { backgroundImage: `url(/api/assets/${s.slideAssetId}/thumb)` } : {} }, s.slideAssetId ? "" : "Thẻ tiêu đề"),
+        h("div", { class: "st", style: s.slideAssetId ? { backgroundImage: `url(api/assets/${s.slideAssetId}/thumb)` } : {} }, s.slideAssetId ? "" : "Thẻ tiêu đề"),
         h("div", { class: "sl" }, h("small", {}, i + 1), h("b", {}, s.title), dotFor(s)));
         return b;
       }),
@@ -246,9 +246,9 @@ class Editor {
   drawStage() {
     const s = this.scene();
     if (!s) { this.stage.replaceChildren(h("div", { class: "canvas" }, "Chọn hoặc thêm cảnh")); return; }
-    const canvas = s.slideAssetId ? h("div", { class: "canvas", role: "img", "aria-label": `Slide cảnh ${s.title}`, style: { backgroundImage: `url(/api/assets/${s.slideAssetId}/file)` } })
+    const canvas = s.slideAssetId ? h("div", { class: "canvas", role: "img", "aria-label": `Slide cảnh ${s.title}`, style: { backgroundImage: `url(api/assets/${s.slideAssetId}/file)` } })
       : h("div", { class: "canvas titlecard" }, s.title);
-    const audio = s.audioAssetId && s.audioMode !== "none" ? h("audio", { controls: true, src: `/api/assets/${s.audioAssetId}/file`, preload: "metadata" }) : null;
+    const audio = s.audioAssetId && s.audioMode !== "none" ? h("audio", { controls: true, src: `api/assets/${s.audioAssetId}/file`, preload: "metadata" }) : null;
     this.stage.replaceChildren(canvas, audio || h("small", {}, s.audioMode === "none" ? `Cảnh không lời — hiển thị ${(s.silentDurationMs / 1000).toFixed(1)} giây` : "Cảnh chưa có âm thanh"),
       h("div", { class: "row" },
         h("button", { class: "btn ghost sm", onclick: () => this.move(-1), title: "Alt+↑" }, "↑ Lên"),
@@ -294,7 +294,7 @@ class Editor {
         h("div", { class: "row" },
           h("button", { class: "btn ghost sm", onclick: async () => { const a = await pickAsset(["audio"], "Chọn bản thu"); if (a) this.attach(s, a.id); } }, "Chọn từ thư viện"),
           recorder(async (f) => { const [a] = await uploadFiles([f]); if (a) this.attach(s, a.id); }),
-          s.audioAssetId && h("button", { class: "btn danger sm", onclick: async () => { try { this.mergeComputed(await del(`/api/projects/${this.p.id}/scenes/${s.id}/audio/recorded`)); this.draw(); } catch (e) { errToast(e); } } }, "Gỡ")),
+          s.audioAssetId && h("button", { class: "btn danger sm", onclick: async () => { try { this.mergeComputed(await del(`api/projects/${this.p.id}/scenes/${s.id}/audio/recorded`)); this.draw(); } catch (e) { errToast(e); } } }, "Gỡ")),
         h("small", {}, "Nhận WAV, M4A, MP3… Âm thanh được chuẩn hóa −16 LUFS, 48 kHz."));
       return box;
     }
@@ -304,7 +304,8 @@ class Editor {
     const st = this.engineTts;
     box.append(h("label", {}, "Mẫu giọng"), vsel,
       !this.voices.length && h("small", {}, "Chưa có mẫu. ", h("a", { href: "#/voice" }, "Thêm ở Voice Studio")),
-      st && !st.installed ? h("div", { class: "notice warn" }, "Chưa cài VieNeu-TTS — chuyển sang Giọng thật hoặc chạy INSTALL_VOICE_AI.bat.")
+      st && st.browser ? h("div", { class: "notice warn" }, "Giọng AI chỉ tạo được trong PNS Engine trên máy Windows. Ở chế độ trình duyệt hãy chọn Giọng thật.")
+        : st && !st.installed ? h("div", { class: "notice warn" }, "Chưa cài VieNeu-TTS — chuyển sang Giọng thật hoặc chạy INSTALL_VOICE_AI.bat.")
         : s.audioAssetId && !s.audioStale ? h("div", { class: "notice ok" }, `Giọng AI sẵn sàng ${fmtDur(s.audioDurationMs)}`, s.audioInfo?.rtf ? ` · RTF ${s.audioInfo.rtf}` : "")
         : h("div", { class: "notice warn" }, s.audioAssetId ? "Lời giảng/giọng đã đổi — cần tạo lại" : "Chưa tạo giọng AI cho cảnh này"),
       h("button", { class: "btn sm", disabled: !s.voiceId || (st && !st.installed), onclick: () => this.genScene(s) }, "Tạo giọng AI cảnh này"),
@@ -313,18 +314,18 @@ class Editor {
   }
 
   async attach(s, assetId) {
-    try { await this.flush(); this.mergeComputed(await post(`/api/projects/${this.p.id}/scenes/${s.id}/audio`, { assetId })); this.draw(); toast("Đã gắn âm thanh", "ok"); }
+    try { await this.flush(); this.mergeComputed(await post(`api/projects/${this.p.id}/scenes/${s.id}/audio`, { assetId })); this.draw(); toast("Đã gắn âm thanh", "ok"); }
     catch (e) { errToast(e); }
   }
 
   async loadVoices() {
-    try { const r = await get("/api/voices"); this.voices = r.voices; this.engineTts = r.engine; this.drawProps(); } catch {}
+    try { const r = await get("api/voices"); this.voices = r.voices; this.engineTts = r.engine; this.drawProps(); } catch {}
   }
 
   // ---------- job ----------
   async runJob(promise, label) {
     const job = await promise;
-    const cancel = h("button", { class: "btn danger sm", onclick: () => post(`/api/jobs/${job.id}/cancel`) }, "Hủy");
+    const cancel = h("button", { class: "btn danger sm", onclick: () => post(`api/jobs/${job.id}/cancel`) }, "Hủy");
     const j = await waitJob(job, (x) => this.jobBox.replaceChildren(h("small", {}, `${label}: ${x.message || ""}`), progressBar(x.progress), cancel));
     this.jobBox.replaceChildren();
     if (j.status === "failed") toast(`${label} lỗi: ${j.error}`, "err");
@@ -335,7 +336,7 @@ class Editor {
   async genScene(s) {
     try {
       await this.flush();
-      const j = await this.runJob(post(`/api/projects/${this.p.id}/scenes/${s.id}/tts`), "Giọng AI");
+      const j = await this.runJob(post(`api/projects/${this.p.id}/scenes/${s.id}/tts`), "Giọng AI");
       if (j.status === "done") { toast(`Đã tạo giọng AI (${j.result.seconds}s xử lý)`, "ok"); await this.refresh(); }
     } catch (e) { errToast(e); }
   }
@@ -356,10 +357,10 @@ class Editor {
     if (this.p.scenes.length) replace = await confirmBox("Thay thế các cảnh hiện có?", "Chọn «Thay thế» để bỏ các cảnh cũ, «Hủy» để thêm vào cuối danh sách.", "Thay thế", true);
     try {
       await this.flush();
-      const j = await this.runJob(post(`/api/projects/${this.p.id}/import-slides`, { assetId: a.id, replace }), "Nhập slide");
+      const j = await this.runJob(post(`api/projects/${this.p.id}/import-slides`, { assetId: a.id, replace }), "Nhập slide");
       if (j.status === "done") {
         this.undo.push(this.snapshot()); this.updUndo();
-        this.p = await get(`/api/projects/${this.p.id}`); this.lastSnap = this.snapshot();
+        this.p = await get(`api/projects/${this.p.id}`); this.lastSnap = this.snapshot();
         this.sel = this.p.scenes.find((s) => s.slideAssetId === j.result.slides[0])?.id || this.p.scenes[0]?.id;
         this.draw(); toast(`Đã nhập ${j.result.pages} trang`, "ok");
       }
@@ -403,7 +404,7 @@ class Editor {
   captionPanel(s) {
     const wrap = h("div");
     const auto = async () => {
-      try { await this.flush(); s.captions = await get(`/api/projects/${this.p.id}/scenes/${s.id}/captions-auto`); s.captionsEdited = true; this.change({ redraw: "none" }); this.drawBottom(); }
+      try { await this.flush(); s.captions = await get(`api/projects/${this.p.id}/scenes/${s.id}/captions-auto`); s.captionsEdited = true; this.change({ redraw: "none" }); this.drawBottom(); }
       catch (e) { errToast(e); }
     };
     if (!s.captionsEdited) {

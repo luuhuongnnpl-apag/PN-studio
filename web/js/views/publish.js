@@ -8,7 +8,7 @@ export default async function publish(view, args) {
   let pid = args[0] || ctx.project()?.id || "";
   const body = h("div");
   const picker = await projectPicker(pid, (p) => { pid = p?.id || ""; history.replaceState(null, "", `#/publish/${pid}`); load(); });
-  const settings = (await get("/api/settings")).app;
+  const settings = (await get("api/settings")).app;
   view.append(h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Trung tâm xuất bản"), h("p", {}, "Duyệt bản 1080p, lưu vết phiên bản, xuất gói cho PNL/PND")),
     h("span", { class: "spacer" }), h("div", { style: { minWidth: "280px" } }, picker.el)),
   h("div", { class: "notice info" }, "PNS không tự động đăng bài. Sau khi duyệt, tải gói phát hành (MP4 + SRT + publication.json) và đăng lên PNL/PND bằng tài khoản quản trị. ",
@@ -17,7 +17,7 @@ export default async function publish(view, args) {
 
   async function load() {
     if (!pid) { body.replaceChildren(h("div", { class: "empty" }, "Chọn dự án.")); return; }
-    const [p, renders] = await Promise.all([get(`/api/projects/${pid}`), get(`/api/projects/${pid}/renders`)]);
+    const [p, renders] = await Promise.all([get(`api/projects/${pid}`), get(`api/projects/${pid}/renders`)]);
     const sc = p.scenes.filter((s) => !s.excluded);
     const checks = [
       [sc.length > 0, `${sc.length} cảnh được đưa vào video`],
@@ -32,8 +32,8 @@ export default async function publish(view, args) {
         h("ul", { style: { listStyle: "none", padding: 0 } }, checks.map(([ok, t]) => h("li", {}, h("span", { class: `badge ${ok ? "ok" : "warn"}` }, ok ? "Đạt" : "Lưu ý"), " ", t))),
         h("small", {}, "Liên kết nguồn PND: ", p.links.pndSource || "chưa ghi", " · Đích PNL: ", p.links.pnlTarget || "chưa ghi", " — ", h("a", { href: "#", onclick: (e) => { e.preventDefault(); editLinks(p); } }, "sửa"))),
       finals.length ? finals.map((r) => renderCard(p, r, load, r.approval
-        ? [h("button", { class: "btn gold sm", onclick: async () => { try { await downloadPost(`/api/projects/${pid}/renders/${r.id}/package`, `PNS_${p.title}_${r.id}.zip`); toast("Đã tạo gói phát hành", "ok"); } catch (e) { errToast(e); } } }, "Tải gói phát hành"),
-           h("button", { class: "btn ghost sm", onclick: async () => { await post(`/api/projects/${pid}/renders/${r.id}/approval`, { approved: false }); load(); } }, "Thu hồi duyệt")]
+        ? [h("button", { class: "btn gold sm", onclick: async () => { try { await downloadPost(`api/projects/${pid}/renders/${r.id}/package`, `PNS_${p.title}_${r.id}.zip`); toast("Đã tạo gói phát hành", "ok"); } catch (e) { errToast(e); } } }, "Tải gói phát hành"),
+           h("button", { class: "btn ghost sm", onclick: async () => { await post(`api/projects/${pid}/renders/${r.id}/approval`, { approved: false }); load(); } }, "Thu hồi duyệt")]
         : h("button", { class: "btn sm", onclick: () => approve(p, r) }, "Duyệt bản này")))
         : h("div", { class: "empty" }, "Chưa có bản 1080p. ", h("a", { href: `#/video/${pid}` }, "Kết xuất ở Video Studio")));
   }
@@ -47,7 +47,7 @@ export default async function publish(view, args) {
       { label: "Hủy", cls: "ghost", result: false },
       { label: "Duyệt", value: () => who.value.trim() ? true : (toast("Nhập tên người duyệt", "err"), null) }]);
     if (ok !== true) return;
-    try { await post(`/api/projects/${p.id}/renders/${r.id}/approval`, { approved: true, approver: who.value, note: note.value }); toast("Đã duyệt", "ok"); load(); }
+    try { await post(`api/projects/${p.id}/renders/${r.id}/approval`, { approved: true, approver: who.value, note: note.value }); toast("Đã duyệt", "ok"); load(); }
     catch (e) { errToast(e); }
   }
 
@@ -59,7 +59,7 @@ export default async function publish(view, args) {
       { label: "Hủy", cls: "ghost", result: false }, { label: "Lưu", result: true }]);
     if (!ok) return;
     try {
-      await put(`/api/projects/${p.id}`, { ...p, links: { pndSource: pnd.value.trim(), pnlTarget: pnl.value.trim() } });
+      await put(`api/projects/${p.id}`, { ...p, links: { pndSource: pnd.value.trim(), pnlTarget: pnl.value.trim() } });
       load();
     } catch (e) { errToast(e); }
   }

@@ -12,11 +12,15 @@ export function unavailable(view, mod) {
     h("ul", {}, (PLANS[mod.id] || []).map((x) => h("li", {}, x)))));
 }
 
-export function needEngine(view, mod) {
+export function needEngine(view, mod, browserMode = false) {
   view.append(h("h1", {}, mod ? mod.name : "PNS"),
-    h("div", { class: "notice info" },
-      h("strong", {}, "Chức năng này chạy trong PNS Engine trên máy cá nhân. "),
-      "Trang web công khai không lưu bản nháp, media hay mẫu giọng của bạn."),
+    browserMode
+      ? h("div", { class: "notice info" },
+        h("strong", {}, "Giọng AI cá nhân chỉ chạy trong PNS Engine trên máy Windows. "),
+        "Ở chế độ trình duyệt, dùng Giọng thật (tải file hoặc thu micro) trong Lecture Studio. Muốn thêm giọng AI cho dự án: Dự án → Sao lưu (.pnsproj) → mở PNS Engine → Khôi phục, rồi tạo giọng AI ở đó.")
+      : h("div", { class: "notice info" },
+        h("strong", {}, "Chức năng này chạy trong PNS Engine trên máy cá nhân. "),
+        "Trang web công khai không lưu bản nháp, media hay mẫu giọng của bạn."),
     h("div", { class: "card" }, h("h3", {}, "Mở PNS Engine"),
       h("ol", {},
         h("li", {}, "Trên máy Windows đã cài, chạy START_PNS.bat (lần đầu cần Internet để cài thư viện)."),

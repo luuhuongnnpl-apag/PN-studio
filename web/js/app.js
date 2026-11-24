@@ -29,7 +29,10 @@ function buildNav() {
 
 function engineBadge() {
   const pill = $("#engine-pill");
-  if (engine.available) {
+  if (engine.mode === "browser") {
+    pill.replaceChildren(h("div", {}, h("span", { class: "dot ok" }), "Chế độ trình duyệt"),
+      h("small", {}, "Dữ liệu lưu trên trình duyệt này · Giọng AI cần PNS Engine"));
+  } else if (engine.available) {
     const t = engine.health.tts;
     pill.replaceChildren(h("div", {}, h("span", { class: "dot ok" }), `PNS Engine ${engine.health.version}`),
       h("small", {}, t.installed ? "Giọng AI: đã cài" : "Giọng AI: chưa cài"));
@@ -66,6 +69,7 @@ async function route() {
     if (mod && mod.status !== "ready") cleanup = unavailable(view, mod);
     else if (!VIEWS[id]) view.append(h("div", { class: "empty" }, "Không tìm thấy trang. ", h("a", { href: "#/" }, "Về trang chủ")));
     else if (id && !engine.available) cleanup = needEngine(view, mod);
+    else if (id === "voice" && engine.mode === "browser") cleanup = needEngine(view, mod, true);
     else cleanup = (await VIEWS[id](view, args, query)) || null;
   } catch (e) {
     view.append(h("div", { class: "notice err" }, "Lỗi hiển thị: ", e.message || String(e)));
@@ -77,7 +81,7 @@ async function route() {
 async function pollJobs() {
   if (!engine.available || document.hidden) return;
   try {
-    const d = await get("/api/jobs");
+    const d = await get("api/jobs");
     const active = d.filter((j) => j.status === "running" || j.status === "queued");
     $("#jobs-mini").textContent = active.length ? `⏳ ${active.length} job đang xử lý` : "";
   } catch { $("#jobs-mini").textContent = "⚠ Mất kết nối Engine"; }

@@ -35,6 +35,10 @@ export default function home(view) {
       step("1", "Cài PNS Engine trên Windows", "Tải mã nguồn, chạy START_PNS.bat. Engine chỉ lắng nghe 127.0.0.1, không mở ra mạng."),
       step("2", "Sản xuất cục bộ", "Nhập PDF/PPTX, viết lời giảng, thu âm hoặc dùng giọng AI cá nhân, kết xuất MP4 1080p + SRT."),
       step("3", "Duyệt và phát hành", "Duyệt bản 1080p, tải gói phát hành, đăng lên PNL/PND bằng tài khoản quản trị.")),
+    engine.mode === "browser" && h("div", { class: "notice info", style: { marginTop: "16px" } },
+      h("strong", {}, "Đang chạy ở chế độ trình duyệt. "),
+      "Nhập PDF, viết lời giảng, thu âm, ghép MP4 + SRT ngay trên trang này; dữ liệu lưu trong trình duyệt của máy đang dùng (sao lưu bằng .pnsproj). ",
+      "Giọng AI cá nhân cần PNS Engine trên máy Windows."),
     !engine.available && h("div", { class: "notice info", style: { marginTop: "16px" } },
       "Bạn đang xem PNS ở chế độ web. Các chức năng sản xuất (dự án, media, giọng, kết xuất) chạy trong PNS Engine trên máy cá nhân; ",
       "đồng bộ đám mây có phân quyền sẽ mở ở giai đoạn P1 sau khi duyệt cấu hình Firebase."));

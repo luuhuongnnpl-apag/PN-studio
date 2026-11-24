@@ -7,6 +7,17 @@ Nền tảng sản xuất nội dung số đa phương tiện của hệ sinh th
 | `web/` | Giao diện PNS: trang chủ, bảng điều khiển, dự án, thư viện media, các Studio, trung tâm xuất bản, cài đặt | Phục vụ bởi PNS Engine (đầy đủ chức năng) **và** Firebase Hosting site riêng (chế độ web: giới thiệu + hướng dẫn) |
 | `engine/` | **PNS Engine**: FastAPI cục bộ — dự án, media, PDF/PPTX → slide, giọng thật, giọng AI (VieNeu-TTS ONNX/CPU), kết xuất MP4/SRT, duyệt, gói phát hành, sao lưu | Máy Windows của giảng viên, chỉ `127.0.0.1` |
 
+## Hai cách dùng
+| | Chế độ trình duyệt (GitHub Pages / Firebase) | PNS Engine (máy Windows) |
+|---|---|---|
+| Mở | https://luuhuongnnpl-apag.github.io/PN-studio/ | `START_PNS.bat` → http://127.0.0.1:7860 |
+| PDF → slide, lời giảng, giọng thật/thu micro, MP4 1080p + SRT, duyệt, gói phát hành | Có (pdf.js, ffmpeg.wasm) | Có (FFmpeg) |
+| PPTX | Xuất PDF trước | Có (LibreOffice) |
+| Giọng AI cá nhân (VieNeu) | Không | Có |
+| Dữ liệu | Trong trình duyệt của máy đang dùng | `%LOCALAPPDATA%\PhucNguyenStudio` |
+
+Chuyển dự án giữa hai chế độ bằng file `.pnsproj` (Dự án → Sao lưu / Khôi phục), tương thích hai chiều.
+
 ## Dùng nhanh (Windows)
 1. Cài Python 3.11 (tick *Add python.exe to PATH*).
 2. Chạy `START_PNS.bat` → trình duyệt mở `http://127.0.0.1:7860`.

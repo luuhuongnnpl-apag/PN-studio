@@ -12,12 +12,12 @@ export function jobTable(jobs, onChange) {
         j.error ? h("small", { style: { color: "var(--err)" } }, j.error) : h("small", {}, j.message || "")),
       h("td", {}, h("small", {}, fmtTime(j.createdAt))),
       h("td", {}, ["queued", "running"].includes(j.status) &&
-        h("button", { class: "btn danger sm", onclick: async () => { try { await post(`/api/jobs/${j.id}/cancel`); onChange?.(); } catch (e) { errToast(e); } } }, "Hủy"))))));
+        h("button", { class: "btn danger sm", onclick: async () => { try { await post(`api/jobs/${j.id}/cancel`); onChange?.(); } catch (e) { errToast(e); } } }, "Hủy"))))));
 }
 
 // Chọn dự án làm việc (dùng chung cho Video Studio, Trung tâm xuất bản)
 export async function projectPicker(current, onPick) {
-  const list = await get("/api/projects");
+  const list = await get("api/projects");
   const sel = h("select", { "aria-label": "Chọn dự án", onchange: () => {
     const p = list.find((x) => x.id === sel.value);
     ctx.setProject(p);

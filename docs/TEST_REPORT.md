@@ -20,6 +20,13 @@ Môi trường: Linux x86-64, Python 3.13, FFmpeg hệ thống, LibreOffice, Chr
 | A11 Regression | PASS (theo thiết kế) | PNS ở repo riêng; không sửa repo PNL (git status sạch), không đụng `firebase.json`/Functions `pnl-vandap`, rules hay dữ liệu lớp/điểm |
 | A12 Bàn giao | MỘT PHẦN | README, hướng dẫn Windows, khóa phụ thuộc lõi, log test, commit có mô tả. Chưa có repo GitHub/PR do chưa được cấp quyền tạo repo |
 
+## Chế độ trình duyệt (v0.2, 24/11/2026)
+Chrome, trang phục vụ tĩnh dưới đường dẫn con `/PN-studio/web/` (giống GitHub Pages), không có Engine — `tools/browser_mode_smoke.py`:
+PASS — nhập PDF 3 trang thành slide (pdf.js), tải M4A và gắn cảnh, kết xuất MP4 1920×1080 dài 15 s trong 9,4 s (ffmpeg.wasm), phát được trong trình duyệt, duyệt, tải gói phát hành, sao lưu `.pnsproj`; 0 lỗi console.
+PASS — `.pnsproj` từ trình duyệt khôi phục vào PNS Engine (giữ bản thu gắn cảnh) và ngược lại.
+PASS — hồi quy chế độ Engine: 11/11 pytest, luồng giao diện đầy đủ 0 lỗi.
+NOT TESTED — trên GitHub Pages thật, Firefox/Safari, video dài trên 10 phút (giới hạn bộ nhớ ffmpeg.wasm).
+
 ## Bài test nội dung
 Chưa dùng PDF Thừa kế thật và mẫu `PNL_Voice_001.wav` (chủ sở hữu giữ riêng, không đưa vào repo). Đã dùng PDF/âm thanh tổng hợp. Chuẩn hóa văn bản đọc câu ACCEPTANCE viết bằng số («Điều 612 BLDS 2015») cho kết quả trùng khớp câu viết bằng chữ trong ACCEPTANCE.md (test `test_acceptance_phrase`).
 
