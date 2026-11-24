@@ -1,0 +1,4 @@
+# Giọng AI cá nhân (tùy chọn): VieNeu-TTS, Apache-2.0, chạy ONNX trên CPU, không cần GPU/API.
+# Trọng số model tải từ Hugging Face ở lần sinh giọng đầu tiên (pnnbao-ump/VieNeu-TTS-v3-Turbo, Apache-2.0).
+# CHƯA kiểm thử trên Windows thật — khóa lại phiên bản phụ thuộc con sau khi sếp chạy thành công.
+vieneu==3.8.5

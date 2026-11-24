@@ -1,0 +1,12 @@
+# PNS Engine — phụ thuộc lõi, khóa theo bản đã chạy kiểm thử (24/11/2026). Không cần API trả phí.
+# Giấy phép: FastAPI/Starlette/Uvicorn (MIT/BSD), pypdfium2 (Apache-2.0/BSD), Pillow (MIT-CMU),
+# python-multipart (Apache-2.0), imageio-ffmpeg (BSD; tải FFmpeg build LGPL/GPL), psutil (BSD).
+fastapi==0.165.0
+starlette==1.10.0
+uvicorn==0.54.0
+pydantic==2.14.4
+python-multipart==0.0.34
+pypdfium2==5.15.2
+pillow==13.0.0
+imageio-ffmpeg==0.8.1
+psutil==7.2.2
