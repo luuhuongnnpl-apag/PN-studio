@@ -3,7 +3,7 @@
 Cấu hình mục tiêu: CPU 4 nhân/8 luồng, RAM 16 GB, Intel UHD (không cần NVIDIA), ổ trống ≥ 5 GB.
 
 ## 1. Cài lần đầu
-1. Cài **Python 3.11** 64-bit từ python.org; tick *Add python.exe to PATH*. (3.12 cũng được.)
+1. Python 3.11–3.13: nếu máy chưa có, `START_PNS.bat` đề nghị cài tự động Python 3.12 bằng winget (bấm Y); hoặc tự cài từ python.org, tick *Add python.exe to PATH*.
 2. Giải nén mã nguồn PNS vào thư mục không dấu, ví dụ `D:\PNS`.
 3. Nháy đúp `START_PNS.bat`. Lần đầu cần Internet: tạo `.venv`, cài thư viện đã khóa phiên bản (`engine\requirements.txt`), kể cả FFmpeg qua gói `imageio-ffmpeg`.
 4. Trình duyệt tự mở `http://127.0.0.1:7860`. Giữ cửa sổ đen mở trong khi làm việc; đóng nó để tắt Engine.
