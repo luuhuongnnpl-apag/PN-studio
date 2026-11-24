@@ -1,4 +1,4 @@
-import { downloadPost, get, put } from "../api.js";
+import { downloadPost, engine, get, put } from "../api.js";
 import { ctx } from "../state.js";
 import { h, toast, errToast, fmtDur, fmtTime } from "../ui.js";
 import { projectPicker } from "./common.js";
@@ -17,7 +17,7 @@ export default async function interactive(view, args) {
   async function render() {
     cleanupFn?.(); cleanupFn = null;
     if (!pid) { body.replaceChildren(h("div", { class: "empty" }, "Chọn dự án đã kết xuất video ở Video Studio.")); return; }
-    const [p, renders, cfg] = await Promise.all([get(`/api/projects/${pid}`), get(`/api/projects/${pid}/renders`), get(`/api/projects/${pid}/interactive`)]);
+    const [p, renders, cfg] = await Promise.all([get(`api/projects/${pid}`), get(`api/projects/${pid}/renders`), get(`api/projects/${pid}/interactive`)]);
     ctx.setProject(p);
     if (!renders.length) {
       body.replaceChildren(h("div", { class: "notice warn" }, "Dự án chưa có bản kết xuất video. ", h("a", { href: `#/video/${pid}` }, "Mở Video Studio để kết xuất")));
@@ -29,7 +29,7 @@ export default async function interactive(view, args) {
     const rsel = h("select", { "aria-label": "Bản kết xuất", onchange: () => { rid = rsel.value; dirty = true; video.src = src(); state(); } },
       renders.map((r) => h("option", { value: r.id, selected: r.id === rid },
         `${r.quality === "final" ? "1080p" : "720p"} · ${fmtDur(r.durationMs)} · ${fmtTime(r.createdAt)}${r.approval ? " · đã duyệt" : ""}`)));
-    const src = () => `/api/projects/${pid}/renders/${rid}/lecture.mp4`;
+    const src = () => `api/projects/${pid}/renders/${rid}/lecture.mp4`;
     const video = h("video", { controls: true, preload: "metadata", src: src(), style: { width: "100%", borderRadius: "10px", background: "#000" } });
     const reqC = h("input", { type: "checkbox", checked: cfg.requireCorrect, onchange: () => (dirty = true) });
     const showE = h("input", { type: "checkbox", checked: cfg.showExplain, onchange: () => (dirty = true) });
@@ -66,7 +66,7 @@ export default async function interactive(view, args) {
     }
 
     const save = async () => {
-      const r = await put(`/api/projects/${pid}/interactive`, { renderId: rid, requireCorrect: reqC.checked, showExplain: showE.checked,
+      const r = await put(`api/projects/${pid}/interactive`, { renderId: rid, requireCorrect: reqC.checked, showExplain: showE.checked,
         questions: qs.map((q) => ({ ...q, options: q.options.filter((o) => o.trim()) })) });
       qs.splice(0, qs.length, ...r.questions.map((q) => ({ ...q, options: [...q.options] }))); dirty = false; draw();
       return r;
@@ -84,11 +84,15 @@ export default async function interactive(view, args) {
         h("div", { class: "row" },
           h("button", { class: "btn ghost", onclick: async () => { try { await save(); toast("Đã lưu câu hỏi", "ok"); } catch (e) { errToast(e); } } }, "Lưu"),
           h("button", { class: "btn ghost", onclick: async () => {
-            try { await save(); window.open(`/api/projects/${pid}/interactive/preview`, "_blank", "noopener"); } catch (e) { errToast(e); } } }, "Xem thử như người học"),
+            try {
+              await save();
+              if (engine.mode === "browser") window.open(URL.createObjectURL(await get(`api/projects/${pid}/interactive/preview`)), "_blank");
+              else window.open(`api/projects/${pid}/interactive/preview`, "_blank", "noopener");
+            } catch (e) { errToast(e); } } }, "Xem thử như người học"),
           h("button", { class: "btn gold", onclick: async () => {
             try {
               if (late()) return toast("Có câu hỏi đặt sau khi video kết thúc", "err");
-              await save(); await downloadPost(`/api/projects/${pid}/interactive/package`, `PNS_interactive_${pid}.zip`);
+              await save(); await downloadPost(`api/projects/${pid}/interactive/package`, `PNS_interactive_${pid}.zip`);
             } catch (e) { errToast(e); } } }, "Tải gói video tương tác")),
         h("p", { class: "muted" }, "Gói gồm index.html + MP4 + phụ đề: mở trực tiếp trên máy hoặc đăng lên PNL/GitHub Pages. Kết quả trả lời chỉ hiện trên máy người học.")),
       h("div", {}, list)));

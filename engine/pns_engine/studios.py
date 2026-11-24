@@ -19,7 +19,7 @@ from xml.sax.saxutils import escape as xml_escape
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from . import media
-from .config import SCHEMA_VERSION, VERSION
+from .config import SCHEMA_VERSION, VERSION, WEB_DIR
 from .media import MediaError, RunContext
 from .render import FONT_CANDIDATES, build_srt, srt_time
 from .storage import new_id, now_ms, valid_id
@@ -28,7 +28,7 @@ from .textnorm import word_count
 if TYPE_CHECKING:
     from .core import PNSEngine
 
-TEMPLATES = Path(__file__).with_name("templates")
+TEMPLATES = WEB_DIR / "player"          # dùng chung với chế độ trình duyệt (web/js/local/studios.js)
 
 
 def _s(v: Any, n: int) -> str:
@@ -770,14 +770,14 @@ def interactive_set(eng: "PNSEngine", pid: str, body: dict) -> dict:
     return data
 
 
-def _player_html(title: str, data: dict, video_src: str, vtt_src: str | None) -> str:
-    tpl = (TEMPLATES / "interactive_player.html").read_text(encoding="utf-8")
+def _player_html(title: str, data: dict, video_src: str, vtt_src: str | None, player: str) -> str:
+    tpl = (TEMPLATES / "interactive.html").read_text(encoding="utf-8")
     payload = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c").replace(">", "\\u003e") \
         .replace("&", "\\u0026").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     track = f'<track kind="subtitles" srclang="vi" label="Tiếng Việt" src="{escape(vtt_src)}" default>' \
         if vtt_src else ""
     return (tpl.replace("{{TITLE}}", escape(title)).replace("{{VIDEO}}", escape(video_src))
-            .replace("{{TRACK}}", track).replace("{{DATA}}", payload))
+            .replace("{{TRACK}}", track).replace("{{PLAYER}}", escape(player)).replace("{{DATA}}", payload))
 
 
 def interactive_preview(eng: "PNSEngine", pid: str) -> str:
@@ -787,7 +787,7 @@ def interactive_preview(eng: "PNSEngine", pid: str) -> str:
         raise ValueError("Chọn bản kết xuất video trước")
     base = f"/api/projects/{pid}/renders/{cfg['renderId']}"
     return _player_html(p["title"], {**cfg, "title": p["title"], "preview": True}, f"{base}/lecture.mp4",
-                        f"{base}/lecture.vtt")
+                        f"{base}/lecture.vtt", "/player/interactive.js")
 
 
 def interactive_package(eng: "PNSEngine", pid: str) -> Path:
@@ -811,7 +811,8 @@ def interactive_package(eng: "PNSEngine", pid: str) -> Path:
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(d / "lecture.mp4", "lecture.mp4", compress_type=zipfile.ZIP_STORED)
         z.writestr("lecture.vtt", vtt)
-        z.writestr("index.html", _player_html(p["title"], data, "lecture.mp4", "lecture.vtt"))
+        z.writestr("index.html", _player_html(p["title"], data, "lecture.mp4", "lecture.vtt", "player.js"))
+        z.write(TEMPLATES / "interactive.js", "player.js")
         z.writestr("interactive.json", json.dumps(data, ensure_ascii=False, indent=2))
         z.writestr("HUONG_DAN.txt",
                    "Gói video tương tác PNS\n\n"

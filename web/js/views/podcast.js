@@ -14,7 +14,7 @@ export default async function podcast(view, args) {
 
   async function render() {
     if (!pid) { body.replaceChildren(h("div", { class: "empty" }, "Chọn dự án có các cảnh đã gắn âm thanh (thu âm thật hoặc giọng AI).")); return; }
-    const [p, d] = await Promise.all([get(`/api/projects/${pid}`), get(`/api/projects/${pid}/podcast`)]);
+    const [p, d] = await Promise.all([get(`api/projects/${pid}`), get(`api/projects/${pid}/podcast`)]);
     ctx.setProject(p);
     const cfg = d.config;
     const sel = { coverAssetId: cfg.coverAssetId, introAssetId: cfg.introAssetId, outroAssetId: cfg.outroAssetId };
@@ -23,12 +23,12 @@ export default async function podcast(view, args) {
       chapters: h("input", { type: "checkbox", checked: cfg.chapters }), audioBaseUrl: h("input", { type: "url", value: cfg.audioBaseUrl, placeholder: "https://… (thư mục sẽ chứa file MP3 trên PNL/PND)" }) };
     const slot = (key, kinds, label) => {
       const lab = h("small", {}, sel[key] ? "Đã chọn" : "Chưa chọn");
-      if (sel[key]) get(`/api/assets?kind=${kinds[0]}`).then((l) => { const a = l.find((x) => x.id === sel[key]); if (a) lab.textContent = a.name; });
+      if (sel[key]) get(`api/assets?kind=${kinds[0]}`).then((l) => { const a = l.find((x) => x.id === sel[key]); if (a) lab.textContent = a.name; });
       return h("div", { class: "row" }, h("span", { style: { minWidth: "110px", fontWeight: 600 } }, label), lab, h("span", { class: "spacer" }),
         h("button", { class: "btn ghost sm", onclick: async () => { const a = await pickAsset(kinds, label); if (a) { sel[key] = a.id; lab.textContent = a.name; } } }, "Chọn"),
         h("button", { class: "btn ghost sm", onclick: () => { sel[key] = null; lab.textContent = "Chưa chọn"; } }, "Bỏ"));
     };
-    const saveCfg = async () => put(`/api/projects/${pid}/podcast`, { ...sel, title: f.title.value, author: f.author.value, description: f.description.value,
+    const saveCfg = async () => put(`api/projects/${pid}/podcast`, { ...sel, title: f.title.value, author: f.author.value, description: f.description.value,
       gapMs: +f.gapMs.value, chapters: f.chapters.checked, audioBaseUrl: f.audioBaseUrl.value });
 
     const scenes = p.scenes.filter((s) => !s.excluded);
@@ -38,7 +38,7 @@ export default async function podcast(view, args) {
       build.disabled = true;
       try {
         await saveCfg();
-        const j = await waitJob(await post(`/api/projects/${pid}/podcast/build`), (x) => jobBox.replaceChildren(progressBar(x.progress), h("small", {}, x.message || "")));
+        const j = await waitJob(await post(`api/projects/${pid}/podcast/build`), (x) => jobBox.replaceChildren(progressBar(x.progress), h("small", {}, x.message || "")));
         if (j.status !== "done") jobBox.replaceChildren(h("div", { class: "notice err" }, "Không dựng được: ", j.error || j.status));
         else { toast("Đã dựng tập podcast", "ok"); render(); }
       } catch (e) { errToast(e); } finally { build.disabled = false; }
@@ -65,15 +65,15 @@ export default async function podcast(view, args) {
   }
 
   function episodeCard(e) {
-    const base = `/api/projects/${pid}/podcasts/${e.id}`;
+    const base = `api/projects/${pid}/podcasts/${e.id}`;
     return h("div", { class: "card", style: { marginBottom: "14px" } },
       h("div", { class: "row" }, e.cover && h("img", { src: `${base}/cover.jpg`, alt: "", style: { width: "72px", height: "72px", borderRadius: "8px", objectFit: "cover" } }),
         h("div", {}, h("h3", { style: { margin: 0 } }, e.title), h("small", {}, `${fmtDur(e.durationMs)} · ${fmtBytes(e.sizeBytes)} · ${fmtTime(e.createdAt)} · bản dự án r${e.projectRevision}`)),
         h("span", { class: "spacer" }), e.aiNarration && h("span", { class: "badge gold" }, "Có giọng AI"),
         e.approval ? h("span", { class: "badge ok" }, `Đã duyệt — ${e.approval.approvedBy}`) : h("span", { class: "badge warn" }, "Chưa duyệt")),
       h("audio", { controls: true, src: `${base}/${e.file}`, preload: "none", style: { width: "100%", margin: "10px 0" } }),
-      e.skippedScenes.length && h("div", { class: "notice warn" }, "Bỏ qua cảnh không có âm thanh: ", e.skippedScenes.join("; ")),
-      e.chapters.length && h("details", {}, h("summary", {}, `${e.chapters.length} chương mục`), h("ol", { class: "tight" }, e.chapters.map((c) => h("li", {}, `${fmtDur(c.startMs)} — ${c.title}`)))),
+      e.skippedScenes.length > 0 && h("div", { class: "notice warn" }, "Bỏ qua cảnh không có âm thanh: ", e.skippedScenes.join("; ")),
+      e.chapters.length > 0 && h("details", {}, h("summary", {}, `${e.chapters.length} chương mục`), h("ol", { class: "tight" }, e.chapters.map((c) => h("li", {}, `${fmtDur(c.startMs)} — ${c.title}`)))),
       h("div", { class: "row", style: { marginTop: "10px" } },
         e.approval ? h("button", { class: "btn ghost sm", onclick: () => approve(e, false) }, "Bỏ duyệt")
           : h("button", { class: "btn sm", onclick: () => approve(e, true) }, "Duyệt tập này"),
@@ -87,7 +87,7 @@ export default async function podcast(view, args) {
   async function approve(e, ok) {
     let approver = "";
     if (ok) { approver = await promptBox("Duyệt tập podcast", "Người duyệt", ""); if (approver == null) return; }
-    try { await post(`/api/projects/${pid}/podcasts/${e.id}/approval`, { approved: ok, approver }); render(); } catch (er) { errToast(er); }
+    try { await post(`api/projects/${pid}/podcasts/${e.id}/approval`, { approved: ok, approver }); render(); } catch (er) { errToast(er); }
   }
 
   await render();

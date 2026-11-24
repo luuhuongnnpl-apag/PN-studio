@@ -17,13 +17,13 @@ export default async function audio(view) {
   const out = h("div");
 
   // Kiểm tra tài sản còn trong thư viện
-  const assets = new Map((await get("/api/assets?kind=audio")).map((a) => [a.id, a]));
+  const assets = new Map((await get("api/assets?kind=audio")).map((a) => [a.id, a]));
   segs = segs.filter((s) => assets.has(s.assetId));
 
   const add = (a) => { segs.push({ assetId: a.id, name: a.name, durationMs: a.meta.durationMs, startMs: 0, endMs: a.meta.durationMs, fadeInMs: 0, fadeOutMs: 0, gainDb: 0 }); save(segs); draw(); };
   const addLib = async () => { const a = await pickAsset(["audio"], "Chọn file âm thanh"); if (a) add(a); };
   const rec = recorder(async (file) => {
-    try { const a = await upload("/api/assets", file); toast("Đã lưu bản thu vào thư viện", "ok"); add(a); } catch (e) { errToast(e); }
+    try { const a = await upload("api/assets", file); toast("Đã lưu bản thu vào thư viện", "ok"); add(a); } catch (e) { errToast(e); }
   });
 
   function draw() {
@@ -33,7 +33,7 @@ export default async function audio(view) {
 
   function segCard(s, i) {
     const canvas = h("canvas", { class: "wave", width: 900, height: 90, "aria-label": "Dạng sóng — bấm nửa trái để đặt điểm đầu, nửa phải để đặt điểm cuối" });
-    const player = h("audio", { src: `/api/assets/${s.assetId}/file`, preload: "none" });
+    const player = h("audio", { src: `api/assets/${s.assetId}/file`, preload: "none" });
     let peaks = null;
     const num = (key, min, max, step, label) => h("div", {}, h("label", {}, label), h("input", { type: "number", min, max, step, value: key.endsWith("Ms") ? sec(s[key]) : s[key],
       oninput: (e) => { const v = +e.target.value; s[key] = key.endsWith("Ms") ? Math.round(v * 1000) : v; clamp(); save(segs); paint(); } }));
@@ -61,7 +61,7 @@ export default async function audio(view) {
       if (ms < (s.startMs + s.endMs) / 2) s.startMs = ms; else s.endMs = ms;
       clamp(); save(segs); draw();
     };
-    get(`/api/assets/${s.assetId}/peaks?n=450`).then((d) => { peaks = d.peaks; paint(); }).catch(() => {});
+    get(`api/assets/${s.assetId}/peaks?n=450`).then((d) => { peaks = d.peaks; paint(); }).catch(() => {});
     const lenEl = h("small", { class: "muted" });
     clamp();
     const play = h("button", { class: "btn ghost sm", onclick: () => {
@@ -88,12 +88,12 @@ export default async function audio(view) {
     if (!segs.length) return toast("Thêm ít nhất một đoạn", "err");
     go.disabled = true;
     try {
-      const job = await post("/api/audio/edit", { segments: segs, gapMs: +gap.value || 0, normalize: norm.checked, name: name.value });
+      const job = await post("api/audio/edit", { segments: segs, gapMs: +gap.value || 0, normalize: norm.checked, name: name.value });
       const j = await waitJob(job, (x) => out.replaceChildren(progressBar(x.progress), h("small", {}, x.message || "")));
       if (j.status !== "done") { out.replaceChildren(h("div", { class: "notice err" }, "Không xuất được: ", j.error || j.status)); return; }
       out.replaceChildren(h("div", { class: "notice ok" }, h("strong", {}, `Đã lưu «${name.value}.wav» (${fmtDur(j.result.durationMs)}) vào Thư viện media. `),
         j.result.ai ? "Có đoạn giọng AI — vẫn mang nhãn AI khi dùng. " : "", "Gắn vào cảnh ở Lecture Studio (Giọng thật → Chọn từ thư viện) hoặc dùng làm mở đầu/kết thúc podcast."),
-      h("audio", { controls: true, src: `/api/assets/${j.result.assetId}/file` }));
+      h("audio", { controls: true, src: `api/assets/${j.result.assetId}/file` }));
     } catch (e) { errToast(e); } finally { go.disabled = false; }
   } }, "Xuất âm thanh");
 

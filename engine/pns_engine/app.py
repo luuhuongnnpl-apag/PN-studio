@@ -383,7 +383,7 @@ def create_app(settings: Settings | None = None, extra_hosts: tuple[str, ...] = 
     @app.get("/api/projects/{pid}/interactive/preview")
     def interactive_preview(pid: str):
         return HTMLResponse(studios.interactive_preview(eng, pid), headers={
-            "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+            "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; "
                                        "media-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'",
             "Cache-Control": "no-store"})
 

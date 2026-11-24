@@ -1,4 +1,4 @@
-import { get, post } from "../api.js";
+import { get, post, saveBlob } from "../api.js";
 import { ctx } from "../state.js";
 import { h, toast, errToast, fmtDur } from "../ui.js";
 import { projectPicker } from "./common.js";
@@ -35,7 +35,7 @@ export default async function content(view, args) {
 
   async function render() {
     if (!pid) { body.replaceChildren(h("div", { class: "empty" }, "Chọn dự án (hoặc tạo dự án ở mục Dự án) để soạn kịch bản.")); return; }
-    const p = await get(`/api/projects/${pid}`);
+    const p = await get(`api/projects/${pid}`);
     ctx.setProject(p);
     const text = h("textarea", { style: { minHeight: "300px", fontFamily: "Consolas,monospace", fontSize: ".88rem" }, placeholder: SAMPLE, "aria-label": "Kịch bản" });
     const mode = h("select", { "aria-label": "Cách nhập" }, h("option", { value: "merge" }, "Ghép vào cảnh hiện có theo thứ tự (giữ slide, âm thanh)"), h("option", { value: "append" }, "Thêm thành cảnh mới ở cuối"));
@@ -45,7 +45,7 @@ export default async function content(view, args) {
 
     const doPreview = async () => {
       try {
-        const { scenes } = await post("/api/content/parse", { text: text.value });
+        const { scenes } = await post("api/content/parse", { text: text.value });
         if (!scenes.length) { preview.replaceChildren(h("div", { class: "notice warn" }, "Không nhận ra cảnh nào. Dùng tiêu đề «## Cảnh 1: …» hoặc tách khối bằng dòng ---.")); return null; }
         const merge = mode.value === "merge";
         preview.replaceChildren(h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "#"), h("th", {}, "Tiêu đề"), h("th", {}, "Vào cảnh"), h("th", {}, "Từ"), h("th", {}, "Nguồn"), h("th", {}))),
@@ -64,8 +64,8 @@ export default async function content(view, args) {
       if (!(await doPreview())) return;
       apply.disabled = true;
       try {
-        const fresh = await get(`/api/projects/${pid}`);
-        await post(`/api/projects/${pid}/content/apply`, { text: text.value, mode: mode.value, keepTitles: keep.checked, revision: fresh.revision });
+        const fresh = await get(`api/projects/${pid}`);
+        await post(`api/projects/${pid}/content/apply`, { text: text.value, mode: mode.value, keepTitles: keep.checked, revision: fresh.revision });
         toast("Đã nhập kịch bản vào dự án", "ok");
         render();
       } catch (e) { errToast(e); } finally { apply.disabled = false; }
@@ -82,12 +82,12 @@ export default async function content(view, args) {
         text, h("label", {}, "Cách nhập"), mode, h("label", { class: "check" }, keep, "Giữ nguyên tiêu đề cảnh hiện có"),
         h("div", { class: "row" }, h("button", { class: "btn ghost", onclick: doPreview }, "Xem trước"), apply), h("div", { style: { marginTop: "12px", overflowX: "auto" } }, preview)),
       h("div", { class: "card" }, h("div", { class: "row" }, h("h2", { style: { margin: 0 } }, "Rà soát kịch bản"), h("span", { class: "spacer" }),
-        h("a", { class: "btn ghost sm", href: `/api/projects/${pid}/script.md` }, "Tải kịch bản .md"), h("a", { class: "btn ghost sm", href: `#/lecture/${pid}` }, "Mở Lecture Studio")), check)));
+        h("button", { class: "btn ghost sm", onclick: async () => { try { saveBlob(await get(`api/projects/${pid}/script.md`), `${(p.title || "kich-ban").replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 60)}.md`); } catch (e) { errToast(e); } } }, "Tải kịch bản .md"), h("a", { class: "btn ghost sm", href: `#/lecture/${pid}` }, "Mở Lecture Studio")), check)));
     await drawCheck(check);
   }
 
   async function drawCheck(box) {
-    const r = await get(`/api/projects/${pid}/content/check`);
+    const r = await get(`api/projects/${pid}/content/check`);
     box.replaceChildren(
       h("p", {}, `${r.scenes.length} cảnh · ${r.totalWords} từ · ước ${fmtDur(r.estMs)} ở tốc độ ${r.wpm} từ/phút · `,
         r.issueCount ? h("span", { class: "badge warn" }, `${r.issueCount} điểm cần xem`) : h("span", { class: "badge ok" }, "Không phát hiện vấn đề")),

@@ -3,9 +3,9 @@
 import * as db from "./db.js";
 
 export const VERSION = "0.2.0-web";
-const SCHEMA = 1;
+export const SCHEMA = 1;
 const LIMIT_MB = 300;
-const MAX_SCENES = 300;
+export const MAX_SCENES = 300;
 const FPS = 5, LEAD = 250, TAIL = 600;
 const QUALITY = { preview: { w: 1280, h: 720, crf: "28" }, final: { w: 1920, h: 1080, crf: "22" } };
 const RENDER_TAG = "b1";
@@ -28,7 +28,7 @@ const extOf = (n) => (n.match(/\.[a-z0-9]{1,6}$/i)?.[0] || "").toLowerCase();
 // ---------- hàng đợi job (một job tại một thời điểm) ----------
 const jobs = new Map();
 let chain = Promise.resolve();
-function submit(type, fn, projectId = null, sceneId = null, params = {}) {
+export function submit(type, fn, projectId = null, sceneId = null, params = {}) {
   const j = { id: newId("jb"), projectId, sceneId, type, status: "queued", progress: 0, message: "Đang chờ", error: null, result: null, params, createdAt: now(), updatedAt: now(), _cancel: false };
   jobs.set(j.id, j);
   const tick = (p, m) => { j.progress = Math.max(0, Math.min(1, p)); if (m) j.message = m; j.updatedAt = now(); };
@@ -51,7 +51,7 @@ const pub = (j) => Object.fromEntries(Object.entries(j).filter(([k]) => !k.start
 const checkCancel = (j) => { if (j._cancel) throw new Error("Đã hủy"); };
 
 // ---------- dự án ----------
-async function getProject(pid) {
+export async function getProject(pid) {
   if (!validId(pid, "pj")) return null;
   const p = await db.get("projects", pid);
   if (!p) return null;
@@ -110,7 +110,7 @@ async function createProject(b) {
   return getProject(p.id);
 }
 
-async function saveProject(pid, b, rev) {
+export async function saveProject(pid, b, rev) {
   const cur = await db.get("projects", pid);
   if (!cur) throw nf("Không tìm thấy dự án");
   if (Number.isInteger(rev) && rev !== cur.revision) throw new HttpError("Dự án đã được thay đổi ở nơi khác. Tải lại để tiếp tục.", 409);
@@ -125,11 +125,12 @@ async function bind(pid, sid, mode, aid, dur, info) {
 async function deleteProject(pid) {
   for (const b of (await db.all("sceneAudio")).filter((b) => b.project_id === pid)) await db.del("sceneAudio", b.key);
   for (const r of (await db.all("renders")).filter((r) => r.projectId === pid)) await deleteRender(r.id);
+  await (await import("./studios.js")).onDeleteProject(pid);
   await db.del("projects", pid);
 }
 
 // ---------- tài sản ----------
-async function addAsset(blob, kind, name, mime, meta, thumb) {
+export async function addAsset(blob, kind, name, mime, meta, thumb) {
   const id = newId("as");
   const buf = await blob.arrayBuffer();
   const rec = { id, kind, name: str(name, 200), mime, file: `file${extOf(name) || ".bin"}`, sha256: await sha(buf), size: blob.size, meta: meta || {}, created_at: now() };
@@ -147,12 +148,13 @@ async function assetUsage(id) {
   const used = new Set();
   for (const p of await db.all("projects")) if (JSON.stringify(p).includes(id)) used.add(p.id);
   for (const b of await db.all("sceneAudio")) if (b.asset_id === id) used.add(b.project_id);
+  for (const pid of await (await import("./studios.js")).usedBy(id)) used.add(pid);
   return [...used];
 }
 
-function canvasBlob(c, type = "image/jpeg", q = 0.82) { return new Promise((r) => c.toBlob(r, type, q)); }
+export function canvasBlob(c, type = "image/jpeg", q = 0.82) { return new Promise((r) => c.toBlob(r, type, q)); }
 
-async function thumbFrom(source, w, h) {
+export async function thumbFrom(source, w, h) {
   const c = document.createElement("canvas");
   c.width = 360; c.height = Math.max(1, Math.round((h / w) * 360));
   c.getContext("2d").drawImage(source, 0, 0, c.width, c.height);
@@ -277,7 +279,7 @@ async function importSlides(pid, assetId, replace) {
 
 // ---------- kết xuất (ffmpeg.wasm) ----------
 let ff = null;
-async function ffmpeg(onLog) {
+export async function ffmpeg(onLog) {
   if (ff) return ff;
   const { FFmpeg } = await import("../../vendor/ffmpeg/index.js");
   const f = new FFmpeg();
@@ -288,7 +290,7 @@ async function ffmpeg(onLog) {
   return f;
 }
 
-async function run(f, j, args) {
+export async function run(f, j, args) {
   checkCancel(j);
   const code = await f.exec(args);
   checkCancel(j);
@@ -416,7 +418,7 @@ async function deleteRender(rid) {
 }
 
 // ---------- sao lưu (.pnsproj, tương thích PNS Engine) ----------
-async function fflate() { return import("../../vendor/fflate/fflate.js"); }
+export async function fflate() { return import("../../vendor/fflate/fflate.js"); }
 
 async function exportProject(pid) {
   const p = await getProject(pid);
@@ -519,6 +521,8 @@ export async function handle(method, rawUrl, body) {
   const parts = u.pathname.replace(/^\/?(api\/)?/, "").split("/").filter(Boolean);
   const [r0, r1, r2, r3, r4, r5] = parts;
   const M = method;
+  const studio = await (await import("./studios.js")).handle(M, parts, q, body);   // Image/Audio/Content/Podcast/Interactive
+  if (studio !== undefined) return studio;
 
   if (r0 === "health") return health();
   if (r0 === "dashboard") {

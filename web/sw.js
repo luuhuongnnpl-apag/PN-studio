@@ -47,6 +47,11 @@ async function serve(req, url) {
     if (p[5] === "lecture.srt") return respond(srt, "application/x-subrip; charset=utf-8", req, dl ? stem + ".srt" : null);
     if (p[5] === "lecture.vtt") return new Response("WEBVTT\n\n" + (await srt.text()).replace(/(\d\d:\d\d:\d\d),(\d{3})/g, "$1.$2"), { headers: { "Content-Type": "text/vtt; charset=utf-8" } });
   }
+  if (p[1] === "projects" && p[3] === "podcasts" && p[5]) {           // tập podcast (Podcast Studio)
+    const e = await get("kv", `podEp:${p[4]}`); if (!e || e.projectId !== p[2]) return nf();
+    if (p[5] === e.file) { const b = await get("blobs", `p:${e.id}:audio`); return b ? respond(b, e.mime, req, dl ? e.file : null) : nf(); }
+    if (p[5] === "cover.jpg") { const b = await get("blobs", `p:${e.id}:cover`); return b ? respond(b, "image/jpeg", req) : nf(); }
+  }
   return nf();
 }
 

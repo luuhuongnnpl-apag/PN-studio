@@ -223,12 +223,12 @@ def test_podcast_and_interactive(env):
                                                                 "requireCorrect": True}).json()
     assert re.fullmatch(r"q[0-9a-f]{8}", saved["questions"][0]["id"])
     pv = c.get(f"/api/projects/{p['id']}/interactive/preview")
-    assert pv.status_code == 200 and "Di sản gồm" in pv.text and "</script><" not in pv.text.split("var D =")[1][:400]
-    assert "script-src 'unsafe-inline'" in pv.headers["content-security-policy"]
+    assert pv.status_code == 200 and "Di sản gồm" in pv.text and '<script src="/player/interactive.js">' in pv.text
+    assert "script-src 'self'" in pv.headers["content-security-policy"] and c.get("/player/interactive.js").status_code == 200
     assert c.post(f"/api/projects/{p['id']}/interactive/package").status_code == 422      # chưa duyệt
     c.post(f"/api/projects/{p['id']}/renders/{rid}/approval", json={"approved": True})
     z = zipfile.ZipFile(io.BytesIO(c.post(f"/api/projects/{p['id']}/interactive/package").content))
-    assert {"index.html", "lecture.mp4", "lecture.vtt", "interactive.json"} <= set(z.namelist())
+    assert {"index.html", "player.js", "lecture.mp4", "lecture.vtt", "interactive.json"} <= set(z.namelist())
     html = z.read("index.html").decode()
     assert 'src="lecture.mp4"' in html and '"requireCorrect": true' in html
     # chống chèn mã qua nội dung câu hỏi

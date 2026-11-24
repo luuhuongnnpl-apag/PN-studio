@@ -37,7 +37,8 @@ Chưa dùng PDF Thừa kế thật và mẫu `PNL_Voice_001.wav` (chủ sở h�
 
 ## Bổ sung v0.2.0 (25/11/2026) — 5 studio mở rộng
 - `pytest engine/tests` — 18/18 PASS (11 cũ + 7 mới trong `test_studios.py`).
-- `tools/ui_smoke_studios.py` — luồng Image → Audio → Content → Podcast → kết xuất → Interactive (xem thử, trả lời câu hỏi) trên Chrome 1440×900, 0 lỗi console.
+- `tools/ui_smoke_studios.py` — luồng Image → Audio → Content → Podcast → kết xuất → Interactive (xem thử, trả lời câu hỏi) trên Chrome 1440×900, 0 lỗi console, chạy đạt ở **cả hai chế độ**: PNS Engine và chế độ trình duyệt (repo tĩnh dưới `/PN-studio/web/`, ffmpeg.wasm).
+- Đối chiếu Content Studio Python ↔ JS trên 5 mẫu kịch bản (tiêu đề cảnh, Markdown, khối ---, nguồn, cờ kiểm chứng, Điều/số hiệu văn bản): kết quả tách cảnh và rà soát trùng khớp.
 
 | Studio | Kết quả | Bằng chứng |
 |---|---|---|
@@ -47,4 +48,4 @@ Chưa dùng PDF Thừa kế thật và mẫu `PNL_Voice_001.wav` (chủ sở h�
 | Podcast | PASS | 1 s mở đầu + 3 s + 2 s, lặng 0,5 s → ~7 s MP3; 3 chương ID3 đọc được bằng FFmpeg; cảnh không âm thanh bị bỏ qua và báo; gói chỉ tải sau khi duyệt; URL không phải https bị loại |
 | Interactive | PASS | Câu thiếu phương án/đáp án → 422; trình phát dừng đúng mốc, chấm đúng/sai; nội dung `</script><script>` không chèn được mã; gói chỉ tải với bản đã duyệt |
 
-Giới hạn: chưa chạy trên Windows thật; nghe thử MP3 trên ứng dụng podcast thật chưa làm; Avatar Studio vẫn chưa mở.
+Giới hạn: chưa chạy trên Windows thật; chế độ trình duyệt chuẩn hóa bản thu gốc theo RMS (không phải EBU R128) như trước, còn bản xuất của Audio/Podcast Studio dùng loudnorm −16 LUFS ở cả hai chế độ; trên Firebase (CSP chặn script nội tuyến) trình phát dùng file `player/interactive.js` ngoài nên vẫn chạy; nghe thử MP3 trên ứng dụng podcast thật chưa làm; Avatar Studio vẫn chưa mở.

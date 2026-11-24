@@ -37,7 +37,7 @@ PDF/PPTX → mỗi trang một cảnh (giữ tỷ lệ) → lời giảng + ngu�
 | Podcast | Tập MP3 từ âm thanh các cảnh + mở đầu/kết thúc, chương mục ID3, ảnh bìa nhúng, nhãn AI; duyệt → gói `audio + cover + episode.json + rss-item.xml + chapters.json` |
 | Interactive | Câu hỏi trắc nghiệm theo mốc video (bắt buộc đúng/giải thích); xem thử như người học; gói `index.html` độc lập + MP4 + VTT (chỉ từ bản 1080p đã duyệt) |
 
-Mọi thao tác không sửa file gốc: kết quả lưu thành tài sản mới trong Thư viện media.
+Mọi thao tác không sửa file gốc: kết quả lưu thành tài sản mới trong Thư viện media. Cả 5 studio chạy được ở **PNS Engine** và **chế độ trình duyệt** (GitHub Pages: ảnh bằng canvas, âm thanh/podcast bằng ffmpeg.wasm, dữ liệu ở IndexedDB); riêng giọng AI cá nhân vẫn chỉ ở Engine. Logic Content Studio có hai bản (Python `studios.py`, JS `web/js/local/content.js`) đã đối chiếu cho kết quả trùng khớp.
 
 ## Trạng thái
 - Phân hệ sẵn sàng (v0.2.0): Bảng điều khiển, Dự án, Thư viện media, Lecture Studio, Voice Studio, Video Studio, **Audio Studio, Content Studio, Image Studio, Podcast Studio, Interactive Studio**, Trung tâm xuất bản, Cài đặt.

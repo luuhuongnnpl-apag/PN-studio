@@ -1,49 +1,7 @@
-<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{TITLE}}</title>
-<style>
-:root{--navy:#102c43;--navy2:#1f4a6c;--gold:#c4a578;--line:#dde4eb;--ok:#1f7a4d;--err:#b3261e;--bg:#f4f6f9}
-*{box-sizing:border-box}body{margin:0;font:16px/1.5 "Segoe UI",system-ui,Roboto,Arial,sans-serif;background:var(--bg);color:#14283a}
-header{background:var(--navy);color:#fff;padding:14px 22px;display:flex;gap:12px;align-items:center}
-header b{letter-spacing:.06em}header small{color:var(--gold);margin-left:auto}
-main{max-width:1100px;margin:22px auto;padding:0 16px}
-h1{font-size:1.4rem;color:var(--navy);margin:0 0 12px}
-.stage{position:relative;background:#000;border-radius:12px;overflow:hidden}
-video{width:100%;display:block;max-height:80vh}
-.ov{position:absolute;inset:0;background:rgba(16,44,67,.92);display:flex;align-items:center;justify-content:center;padding:20px}
-.ov[hidden]{display:none}
-.q{background:#fff;border-radius:12px;max-width:680px;width:100%;padding:22px;max-height:100%;overflow:auto}
-.q h2{font-size:1.15rem;color:var(--navy);margin:0 0 14px}
-.opt{display:block;width:100%;text-align:left;font:inherit;padding:10px 14px;margin:8px 0;border:1px solid #c7d2df;border-radius:8px;background:#fff;cursor:pointer}
-.opt:hover{border-color:var(--navy2)}.opt:focus-visible{outline:3px solid var(--gold)}
-.opt.ok{border-color:var(--ok);background:#e5f3ea}.opt.bad{border-color:var(--err);background:#fde8e6}
-.fb{margin:12px 0 0;padding:10px 12px;border-radius:8px;background:#f6efe3}
-.btn{font:inherit;font-weight:600;padding:9px 16px;border-radius:8px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;margin-top:12px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
-.chip{font-size:.85rem;padding:3px 10px;border-radius:99px;background:#e9eef3;color:var(--navy2);border:0;cursor:default}
-.chip.ok{background:#e5f3ea;color:var(--ok)}.chip.bad{background:#fde8e6;color:var(--err)}
-.note{font-size:.85rem;color:#5b7286}.score{font-size:1.1rem;font-weight:700;color:var(--navy)}
-</style>
-</head>
-<body>
-<header><b>PHÚC NGUYÊN STUDIO</b><span>Video tương tác</span><small id="ai"></small></header>
-<main>
-<h1 id="title"></h1>
-<div class="stage">
-  <video id="v" controls preload="metadata" playsinline src="{{VIDEO}}">{{TRACK}}</video>
-  <div class="ov" id="ov" hidden role="dialog" aria-modal="true" aria-labelledby="qt"><div class="q" id="qbox"></div></div>
-</div>
-<div class="chips" id="chips" aria-label="Các câu hỏi trong video"></div>
-<p class="score" id="score"></p>
-<p class="note">Video tự dừng ở các mốc để bạn trả lời. Kết quả chỉ hiển thị trên máy này, không gửi đi đâu.</p>
-</main>
-<script>
+// Trình phát video tương tác PNS — dùng chung cho xem thử (Engine/trình duyệt) và gói xuất bản.
 (function () {
   "use strict";
-  var D = {{DATA}};
+  var D = JSON.parse(document.getElementById("pns-data").textContent);
   var v = document.getElementById("v"), ov = document.getElementById("ov"), box = document.getElementById("qbox");
   var chips = document.getElementById("chips"), scoreEl = document.getElementById("score");
   var qs = (D.questions || []).slice().sort(function (a, b) { return a.atMs - b.atMs; });
@@ -112,6 +70,3 @@ video{width:100%;display:block;max-height:80vh}
   v.addEventListener("ended", drawChips);
   drawChips();
 })();
-</script>
-</body>
-</html>

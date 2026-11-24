@@ -19,9 +19,9 @@ const sel = (opts, cur, label) => h("select", { "aria-label": label }, Object.en
 
 function resultCard(a) {
   return h("div", { class: "card", style: { marginTop: "14px" } }, h("h3", {}, "Đã lưu vào Thư viện media"),
-    h("img", { src: `/api/assets/${a.id}/file`, alt: a.name, style: { maxWidth: "100%", maxHeight: "360px", borderRadius: "8px", border: "1px solid var(--line)" } }),
+    h("img", { src: `api/assets/${a.id}/file`, alt: a.name, style: { maxWidth: "100%", maxHeight: "360px", borderRadius: "8px", border: "1px solid var(--line)" } }),
     h("p", {}, h("b", {}, a.name), ` · ${a.meta.width}×${a.meta.height}`),
-    h("div", { class: "row" }, h("a", { class: "btn ghost sm", href: `/api/assets/${a.id}/file?download=1` }, "Tải về"), h("a", { class: "btn ghost sm", href: "#/media" }, "Mở Thư viện media")));
+    h("div", { class: "row" }, h("a", { class: "btn ghost sm", href: `api/assets/${a.id}/file?download=1` }, "Tải về"), h("a", { class: "btn ghost sm", href: "#/media" }, "Mở Thư viện media")));
 }
 
 export default async function image(view) {
@@ -80,14 +80,14 @@ function cropTab(box) {
     const a = await pickAsset(["image", "slide"], "Chọn ảnh hoặc slide");
     if (!a) return;
     src = a; srcLabel.textContent = a.name;
-    img = new Image(); img.onload = paint; img.src = `/api/assets/${a.id}/file`;
+    img = new Image(); img.onload = paint; img.src = `api/assets/${a.id}/file`;
     f.width.value = Math.min(1920, a.meta.width || 1920);
   };
   const go = h("button", { class: "btn gold", onclick: async () => {
     if (!src) return toast("Chọn ảnh trước", "err");
     go.disabled = true;
     try {
-      const a = await post("/api/image/transform", { assetId: src.id, ...st, width: +f.width.value || 0, format: f.format.value, name: f.name.value });
+      const a = await post("api/image/transform", { assetId: src.id, ...st, width: +f.width.value || 0, format: f.format.value, name: f.name.value });
       out.replaceChildren(resultCard(a)); toast("Đã tạo ảnh mới", "ok");
     } catch (e) { errToast(e); } finally { go.disabled = false; }
   } }, "Tạo ảnh mới");
@@ -117,7 +117,7 @@ function coverTab(box) {
     if (!f.title.value.trim()) return toast("Nhập tiêu đề", "err");
     go.disabled = true;
     try {
-      const a = await post("/api/image/cover", { ...Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value])), bgAssetId: bg?.id || null });
+      const a = await post("api/image/cover", { ...Object.fromEntries(Object.entries(f).map(([k, el]) => [k, el.value])), bgAssetId: bg?.id || null });
       out.replaceChildren(resultCard(a)); toast("Đã tạo ảnh bìa", "ok");
     } catch (e) { errToast(e); } finally { go.disabled = false; }
   } }, "Tạo ảnh bìa");
