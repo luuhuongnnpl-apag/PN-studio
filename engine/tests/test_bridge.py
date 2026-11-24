@@ -123,3 +123,10 @@ def test_normalize_preview(env):
     r = plain.post("/bridge/normalize", headers=web(k), json={"text": "BLDS", "dictionary": []})
     assert r.json()["spoken"] == "BLDS"
     assert any(d["written"] == "BLDS" for d in plain.get("/bridge/status", headers=web(k)).json()["dictionary"])
+
+
+def test_ui_files_always_revalidated(env):
+    c = env["c"]
+    r = c.get("/js/app.js")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-cache" and r.headers.get("etag")
+    assert c.get("/js/app.js", headers={"If-None-Match": r.headers["etag"]}).status_code == 304

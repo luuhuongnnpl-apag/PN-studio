@@ -57,6 +57,8 @@ def create_app(settings: Settings | None = None, extra_hosts: tuple[str, ...] = 
             if request.method not in ("GET", "HEAD") and request.headers.get("x-pns-token") != token:
                 return JSONResponse({"error": "Thao tác ghi cần mã phiên trong header"}, status_code=401)
         resp = await call_next(request)
+        # Giao diện luôn kiểm tra lại với Engine (ETag) để bản cập nhật có hiệu lực ngay, không dùng JS cũ trong cache
+        resp.headers.setdefault("Cache-Control", "no-cache")
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["Referrer-Policy"] = "no-referrer"
         resp.headers["X-Frame-Options"] = "DENY"
