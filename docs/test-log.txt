@@ -1,0 +1,12 @@
+engine/tests/test_e2e.py::test_security_guards PASSED                    [  9%]
+engine/tests/test_e2e.py::test_upload_validation PASSED                  [ 18%]
+engine/tests/test_e2e.py::test_full_lecture_pipeline PASSED              [ 27%]
+engine/tests/test_e2e.py::test_import_rejects_traversal PASSED           [ 36%]
+engine/tests/test_e2e.py::test_tts_unavailable_reports_error PASSED      [ 45%]
+engine/tests/test_e2e.py::test_cancel_job PASSED                         [ 54%]
+engine/tests/test_e2e.py::test_pptx_conversion PASSED                    [ 63%]
+engine/tests/test_textnorm.py::test_numbers PASSED                       [ 72%]
+engine/tests/test_textnorm.py::test_acceptance_phrase PASSED             [ 81%]
+engine/tests/test_textnorm.py::test_legal_forms PASSED                   [ 90%]
+engine/tests/test_textnorm.py::test_split_and_chunk PASSED               [100%]
+======================== 11 passed, 1 warning in 16.88s ========================
