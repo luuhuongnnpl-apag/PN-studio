@@ -1,0 +1,34 @@
+// BẢN NHÁP P1 — CHƯA TRIỂN KHAI. Firestore chỉ có MỘT bộ rules cho cả project phuc-nguyen-library:
+// KHÔNG deploy file này riêng (sẽ ghi đè rules của PNL). Khi được duyệt, chép khối `match` dưới đây
+// vào bên trong `match /databases/{database}/documents { ... }` của rules PNL hiện hành, chạy emulator test, rồi mới deploy.
+//
+// Mô hình: pnStudioProjects/{projectId} { ownerId, members: {uid: 'editor'|'viewer'}, title, status, revision, ... }
+//          pnStudioPublications/{pubId}  { projectId, ownerId, status: 'published'|'withdrawn', visibility, ... }
+// Mặc định từ chối; vai trò lấy từ dữ liệu phía server, không tin vai trò client gửi lên.
+
+    match /pnStudioProjects/{projectId} {
+      function role() {
+        return request.auth == null ? null
+          : resource.data.ownerId == request.auth.uid ? 'owner'
+          : resource.data.members.get(request.auth.uid, null);
+      }
+      allow read: if role() in ['owner', 'editor', 'viewer'];
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.revision == 1;
+      allow update: if role() in ['owner', 'editor']
+        && request.resource.data.ownerId == resource.data.ownerId          // không đổi chủ sở hữu
+        && (role() == 'owner' || request.resource.data.members == resource.data.members)  // chỉ owner phân quyền
+        && request.resource.data.revision == resource.data.revision + 1;   // chống ghi đè
+      allow delete: if role() == 'owner';
+    }
+
+    match /pnStudioPublications/{pubId} {
+      // Sinh viên/người xem chỉ đọc bản đã xuất bản và được phép; bản nháp không bao giờ lộ ra.
+      allow read: if resource.data.status == 'published'
+        && (resource.data.visibility == 'public' || request.auth != null);
+      allow create, update: if request.auth != null
+        && get(/databases/$(database)/documents/pnStudioProjects/$(request.resource.data.projectId)).data.ownerId == request.auth.uid
+        && request.resource.data.approvedBy is string;
+      allow delete: if false;   // rút bản bằng status 'withdrawn' để rollback theo revision
+    }

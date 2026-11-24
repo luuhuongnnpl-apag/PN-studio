@@ -1,0 +1,8 @@
+{
+  "projects": { "default": "phuc-nguyen-library" },
+  "targets": {
+    "phuc-nguyen-library": {
+      "hosting": { "pns": ["phuc-nguyen-studio"] }
+    }
+  }
+}
