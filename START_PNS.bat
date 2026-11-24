@@ -14,8 +14,16 @@ if not exist "engine\run.py" (
   exit /b 1
 )
 
-rem ---- Da co moi truong rieng thi dung luon ----
-if exist ".venv\Scripts\python.exe" goto install
+rem ---- Da co moi truong rieng va pip con tot thi dung luon; hong thi tao lai ----
+if exist ".venv\Scripts\python.exe" (
+  ".venv\Scripts\python.exe" -m pip --version >nul 2>&1
+  if errorlevel 1 (
+    echo Moi truong Python cu bi hong, dang xoa de tao lai...
+    rmdir /s /q ".venv"
+  ) else (
+    goto install
+  )
+)
 
 rem ---- Tim Python 3.11 - 3.13 (uu tien 3.12) ----
 set "PY="
@@ -56,14 +64,14 @@ exit /b 1
 echo Dang tao moi truong Python rieng cho PNS...
 %PY% -m venv .venv
 if errorlevel 1 goto fail
+".venv\Scripts\python.exe" -m pip --version >nul 2>&1 || ".venv\Scripts\python.exe" -m ensurepip --upgrade
 
 :install
 rem ---- Cai/cap nhat thu vien khi requirements thay doi ----
 fc /b "engine\requirements.txt" ".venv\pns-req.txt" >nul 2>&1
 if errorlevel 1 (
   echo Dang cai thu vien PNS - lan dau can Internet, khoang 2-5 phut...
-  ".venv\Scripts\python.exe" -m pip install --upgrade pip >nul
-  ".venv\Scripts\python.exe" -m pip install -r engine\requirements.txt
+  ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r engine\requirements.txt
   if errorlevel 1 goto fail
   copy /y "engine\requirements.txt" ".venv\pns-req.txt" >nul
 )
