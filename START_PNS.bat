@@ -4,6 +4,16 @@ setlocal EnableExtensions
 title Phuc Nguyen Studio Engine
 cd /d "%~dp0"
 
+rem ---- File .bat phai nam canh thu muc engine; tu tim neu dat o thu muc cha ----
+if not exist "engine\run.py" if exist "phuc-nguyen-studio\engine\run.py" cd /d "%~dp0phuc-nguyen-studio"
+if not exist "engine\run.py" (
+  echo [LOI] Khong thay thu muc engine canh START_PNS.bat.
+  echo Hay dat START_PNS.bat vao thu muc ma nguon PNS - noi co hai thu muc engine va web - roi chay lai.
+  echo Thu muc hien tai: %CD%
+  pause
+  exit /b 1
+)
+
 rem ---- Da co moi truong rieng thi dung luon ----
 if exist ".venv\Scripts\python.exe" goto install
 
