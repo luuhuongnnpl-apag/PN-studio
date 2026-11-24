@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="pns-token" content="">
+<meta name="description" content="Phúc Nguyên Studio — hệ sinh thái sản xuất nội dung số đa phương tiện của Phúc Nguyên.">
+<title>Phúc Nguyên Studio</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/pns.css">
+</head>
+<body>
+<a class="skip" href="#view">Bỏ qua điều hướng</a>
+<div class="shell">
+  <aside class="sidebar" aria-label="Điều hướng PNS">
+    <a class="brand" href="#/">
+      <img src="img/favicon.svg" alt="" width="34" height="34">
+      <span><strong>PHÚC NGUYÊN</strong><small>STUDIO</small></span>
+    </a>
+    <nav id="nav"></nav>
+    <div class="side-foot" id="engine-pill" role="status"></div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu" id="menu" aria-label="Mở menu">☰</button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="top-right">
+        <a class="ctx" id="ctx" href="#/projects" hidden></a>
+        <div class="jobs-mini" id="jobs-mini" aria-live="polite"></div>
+      </div>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
