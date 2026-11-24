@@ -5,6 +5,7 @@ import argparse
 import logging
 import logging.handlers
 import sys
+import os
 import threading
 import webbrowser
 from pathlib import Path
@@ -38,6 +39,9 @@ def main() -> None:
           f"  Dong cua so nay de tat Engine.\n")
     if not args.no_browser:
         threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    if os.environ.get("PNS_PRELOAD_TTS", "1") != "0":       # nạp sẵn giọng AI (nếu đã cài) để lần sinh đầu nhanh
+        eng = app.state.engine
+        threading.Timer(3, lambda: eng.tts.preload(eng.tts_config())).start()
     uvicorn.run(app, host="127.0.0.1", port=s.port, log_level="warning", access_log=False)
 
 

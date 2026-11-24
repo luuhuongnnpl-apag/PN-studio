@@ -746,8 +746,8 @@ def clean_questions(qs: Any) -> list[dict]:
             raise ValueError(f"Câu {i}: chưa nhập nội dung câu hỏi")
         if len(opts) < 2:
             raise ValueError(f"Câu {i}: cần ít nhất 2 phương án")
-        correct = _int(q.get("correct"), 0, len(opts) - 1, -1)
-        if correct < 0 or not isinstance(q.get("correct"), int) or q.get("correct") >= len(opts):
+        correct = q.get("correct")
+        if not isinstance(correct, int) or isinstance(correct, bool) or not 0 <= correct < len(opts):
             raise ValueError(f"Câu {i}: chưa chọn đáp án đúng")
         qid = q.get("id") if isinstance(q.get("id"), str) and re.fullmatch(r"q[0-9a-f]{8}", q["id"]) else \
             "q" + new_id("qq")[3:11]
@@ -826,3 +826,71 @@ __all__ = ["image_transform", "image_cover", "peaks", "audio_edit_job", "parse_s
            "content_check", "export_script", "podcast_config", "set_podcast_config", "podcast_build_job",
            "podcast_episodes", "podcast_dir", "podcast_approval", "podcast_package", "interactive_get",
            "interactive_set", "interactive_preview", "interactive_package", "build_srt", "srt_time"]
+
+
+# =====================================================================================
+# HỌC LIỆU ĐIỆN TỬ (E-learning): gói nhiều bài giảng video + lời giảng + căn cứ + tài liệu + kiểm tra cuối
+# Đóng gói (HTML/SCORM 1.2) chạy phía giao diện (web/js/elearning/build.js) để dùng chung cho cả hai chế độ.
+# =====================================================================================
+def _asset_ok(eng: "PNSEngine", aid: Any, kinds: tuple) -> str | None:
+    a = eng.store.asset(aid) if isinstance(aid, str) else None
+    return a["id"] if a and a["kind"] in kinds else None
+
+
+def clean_package(eng: "PNSEngine", body: dict, pkg_id: str) -> dict:
+    lessons = []
+    for i, ls in enumerate((body.get("lessons") or [])[:50], 1):
+        if not isinstance(ls, dict):
+            continue
+        pid = ls.get("projectId")
+        if not (isinstance(pid, str) and eng.get_project(pid)):
+            raise ValueError(f"Bài {i}: chọn dự án bài giảng")
+        rid = ls.get("renderId")
+        rid = rid if isinstance(rid, str) and eng.render_dir(pid, rid) else None
+        lid = ls.get("id") if isinstance(ls.get("id"), str) and valid_id(ls["id"], "ls") else new_id("ls")
+        att = [x for x in (_asset_ok(eng, a, ("pdf", "image", "audio")) for a in (ls.get("attachments") or [])[:20]) if x]
+        lessons.append({"id": lid, "title": _s(ls.get("title"), 200) or f"Bài {i}", "projectId": pid, "renderId": rid,
+                        "intro": _s(ls.get("intro"), 3000), "transcript": bool(ls.get("transcript", True)),
+                        "sources": bool(ls.get("sources", True)), "questions": bool(ls.get("questions", True)),
+                        "attachments": list(dict.fromkeys(att))})
+    if len({x["id"] for x in lessons}) != len(lessons):
+        raise ValueError("Trùng mã bài học")
+    quiz = body.get("quiz") or {}
+    return {"id": pkg_id, "title": _s(body.get("title"), 200) or "Học liệu chưa đặt tên",
+            "course": _s(body.get("course"), 200), "author": _s(body.get("author"), 160), "org": _s(body.get("org"), 200),
+            "description": _s(body.get("description"), 4000),
+            "objectives": [_s(o, 300) for o in (body.get("objectives") or [])[:20] if _s(o, 300)],
+            "coverAssetId": _asset_ok(eng, body.get("coverAssetId"), ("image", "slide")),
+            "lessons": lessons,
+            "quiz": {"questions": clean_questions(quiz.get("questions") or []), "passScore": _int(quiz.get("passScore"), 0, 100, 70),
+                     "title": _s(quiz.get("title"), 200) or "Bài kiểm tra cuối"},
+            "completion": {"minWatch": _int((body.get("completion") or {}).get("minWatch"), 50, 100, 90)},
+            "updatedAt": now_ms()}
+
+
+def elearning_list(eng: "PNSEngine") -> list[dict]:
+    out = []
+    for r in eng.store.q("SELECT value FROM kv WHERE key LIKE 'elearn:%'"):
+        p = json.loads(r["value"])
+        out.append({k: p[k] for k in ("id", "title", "course", "updatedAt")} | {"lessons": len(p["lessons"])})
+    return sorted(out, key=lambda x: -x["updatedAt"])
+
+
+def elearning_get(eng: "PNSEngine", pkg_id: str) -> dict:
+    p = eng.store.kv_get(f"elearn:{pkg_id}", None) if valid_id(pkg_id, "el") else None
+    if not p:
+        raise KeyError("Không tìm thấy học liệu")
+    return p
+
+
+def elearning_save(eng: "PNSEngine", pkg_id: str | None, body: dict) -> dict:
+    if pkg_id:
+        elearning_get(eng, pkg_id)
+    pkg = clean_package(eng, body, pkg_id or new_id("el"))
+    eng.store.kv_set(f"elearn:{pkg['id']}", pkg)
+    return pkg
+
+
+def elearning_delete(eng: "PNSEngine", pkg_id: str) -> None:
+    elearning_get(eng, pkg_id)
+    eng.store.x("DELETE FROM kv WHERE key=?", (f"elearn:{pkg_id}",))

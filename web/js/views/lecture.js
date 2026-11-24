@@ -304,7 +304,8 @@ class Editor {
     const st = this.engineTts;
     box.append(h("label", {}, "Mẫu giọng"), vsel,
       !this.voices.length && h("small", {}, "Chưa có mẫu. ", h("a", { href: "#/voice" }, "Thêm ở Voice Studio")),
-      st && st.browser ? h("div", { class: "notice warn" }, "Giọng AI chỉ tạo được trong PNS Engine trên máy Windows. Ở chế độ trình duyệt hãy chọn Giọng thật.")
+      st && st.bridge && !st.connected ? h("div", { class: "notice warn" }, "Giọng AI được sinh bởi PNS Engine trên máy này. ", st.paired ? "Chưa kết nối được — mở START_PNS.bat rồi " : "Chưa ghép nối — ",
+          h("a", { href: "#/settings" }, "vào Cài đặt"), ".", s.audioAssetId && !s.audioStale ? ` Âm thanh AI đã tạo (${fmtDur(s.audioDurationMs)}) vẫn dùng được.` : "")
         : st && !st.installed ? h("div", { class: "notice warn" }, "Chưa cài VieNeu-TTS — chuyển sang Giọng thật hoặc chạy INSTALL_VOICE_AI.bat.")
         : s.audioAssetId && !s.audioStale ? h("div", { class: "notice ok" }, `Giọng AI sẵn sàng ${fmtDur(s.audioDurationMs)}`, s.audioInfo?.rtf ? ` · RTF ${s.audioInfo.rtf}` : "")
         : h("div", { class: "notice warn" }, s.audioAssetId ? "Lời giảng/giọng đã đổi — cần tạo lại" : "Chưa tạo giọng AI cho cảnh này"),

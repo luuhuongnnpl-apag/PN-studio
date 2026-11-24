@@ -2,7 +2,7 @@
 // PDF bằng pdf.js, ghép video bằng ffmpeg.wasm. Giọng AI cá nhân KHÔNG có ở chế độ này (cần PNS Engine).
 import * as db from "./db.js";
 
-export const VERSION = "0.2.0-web";
+export const VERSION = "0.3.0-web";
 export const SCHEMA = 1;
 const LIMIT_MB = 300;
 export const MAX_SCENES = 300;
@@ -19,7 +19,7 @@ const bad = (m) => new HttpError(m, 422);
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 export const newId = (p) => { const b = new Uint8Array(8); crypto.getRandomValues(b); return `${p}_${hex(b)}`; };
 const validId = (v, p) => typeof v === "string" && new RegExp(`^${p}_[0-9a-f]{16}$`).test(v);
-const sha = async (data) => hex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : data));
+export const sha = async (data) => hex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : data));
 const now = () => Date.now();
 const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 const url = (v) => { v = str(v, 500).trim(); return /^https:\/\/[^\s<>"']+$/.test(v) ? v : ""; };
@@ -57,13 +57,17 @@ export async function getProject(pid) {
   if (!p) return null;
   const binds = (await db.all("sceneAudio")).filter((b) => b.project_id === pid);
   const m = new Map(binds.map((b) => [`${b.scene_id}|${b.mode}`, b]));
+  const V = await import("./voices.js");
+  const voices = await V.list(), dict = await V.dictionary();
   for (const s of p.scenes) {
     const b = s.audioMode !== "none" ? m.get(`${s.id}|${s.audioMode}`) : null;
     s.audioAssetId = b?.asset_id || null;
     s.audioDurationMs = b?.duration_ms ?? null;
     s.audioInfo = b?.info ? JSON.parse(b.info) : null;
-    s.audioStale = s.audioMode === "tts";
-    s.spokenText = "Văn bản đọc dùng cho giọng AI — chỉ tạo được trong PNS Engine trên máy cá nhân.";
+    // Giọng AI cũ khi lời giảng, từ điển đọc hoặc mẫu giọng đổi so với lúc sinh
+    s.audioStale = s.audioMode === "tts" && !(b && s.audioInfo?.inputHash && s.audioInfo.inputHash === await V.ttsHash(s, voices, dict));
+    s.spokenText = s.audioMode === "tts" && !s.audioStale && s.audioInfo?.spoken ? s.audioInfo.spoken
+      : V.spokenInput(s).raw ? s.scriptSpoken : "Văn bản đọc được PNS Engine chuẩn hóa (số, ngày, viết tắt) khi tạo giọng AI. Xem trước ở Voice Studio → Từ điển đọc.";
     s.wordCount = (s.scriptOriginal.match(/[\p{L}\p{N}]+/gu) || []).length;
   }
   return p;
@@ -118,7 +122,7 @@ export async function saveProject(pid, b, rev) {
   return getProject(pid);
 }
 
-async function bind(pid, sid, mode, aid, dur, info) {
+export async function bind(pid, sid, mode, aid, dur, info) {
   await db.put("sceneAudio", { key: `${pid}|${sid}|${mode}`, project_id: pid, scene_id: sid, mode, asset_id: aid, duration_ms: dur, spoken_hash: null, info: JSON.stringify(info || {}) });
 }
 
@@ -201,7 +205,7 @@ async function normalizeAudio(blob) {
   return { wav: encodeWav(out, 48000, gain), durationMs: Math.round(buf.duration * 1000) };
 }
 
-function encodeWav(samples, rate, gain = 1) {
+export function encodeWav(samples, rate, gain = 1) {
   const n = samples.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
   const w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt ");
@@ -353,17 +357,28 @@ async function renderProject(pid, quality) {
     const p = await getProject(pid);
     const scenes = p.scenes.filter((s) => !s.excluded);
     if (!scenes.length) throw bad("Dự án chưa có cảnh nào để kết xuất");
-    const tts = scenes.find((s) => s.audioMode === "tts");
-    if (tts) throw bad(`Cảnh «${tts.title}» dùng giọng AI — chỉ kết xuất được trong PNS Engine. Hãy chuyển sang Giọng thật/Không lời, hoặc sao lưu dự án và mở bằng PNS Engine.`);
-    tick(0.02, "Nạp ffmpeg.wasm (lần đầu tải khoảng 32 MB)");
+    const stale = scenes.filter((s) => s.audioMode === "tts" && s.audioStale);
+    if (stale.length) {                       // sinh giọng AI còn thiếu qua PNS Engine của máy (dùng lại bộ đệm)
+      const V = await import("./voices.js");
+      if (!(await V.ttsStatus(true)).connected) throw bad(`${stale.length} cảnh giọng AI chưa có âm thanh mới. Mở PNS Engine trên máy (START_PNS.bat) và ghép nối ở Cài đặt để sinh giọng, hoặc chuyển các cảnh đó sang Giọng thật.`);
+      for (const [k, s] of stale.entries()) {
+        if (j._cancel) throw new Error("Đã hủy");
+        await V.generateSceneTts(pid, s, j, (f, m) => tick(0.01 + 0.3 * (k + f) / stale.length, `Giọng AI cảnh ${k + 1}/${stale.length}: ${m || ""}`));
+      }
+    }
+    const fresh = await getProject(pid);
+    scenes.splice(0, scenes.length, ...fresh.scenes.filter((s) => !s.excluded));
+    const ai = scenes.some((s) => s.audioMode === "tts");
+    tick(stale.length ? 0.32 : 0.02, "Nạp ffmpeg.wasm (lần đầu tải khoảng 32 MB)");
     const f = await ffmpeg();
     const n = scenes.length; const clips = []; const cues = []; const timeline = []; let offset = 0, reused = 0;
     for (let i = 0; i < n; i++) {
       const s = scenes[i];
       tick(0.05 + (0.85 * i) / n, `Kết xuất cảnh ${i + 1}/${n}`);
       const slideRec = s.slideAssetId ? await db.get("assets", s.slideAssetId) : null;
-      const audioRec = s.audioMode === "recorded" && s.audioAssetId ? await db.get("assets", s.audioAssetId) : null;
+      const audioRec = s.audioMode !== "none" && s.audioAssetId ? await db.get("assets", s.audioAssetId) : null;
       if (s.audioMode === "recorded" && !audioRec) throw bad(`Cảnh ${i + 1} «${s.title}» chọn giọng thật nhưng chưa có bản thu`);
+      if (s.audioMode === "tts" && !audioRec) throw bad(`Cảnh ${i + 1} «${s.title}» chưa có giọng AI`);
       const audioMs = audioRec ? audioRec.meta.durationMs : 0;
       const dur = audioRec ? frameMs(LEAD + audioMs + TAIL) : frameMs(s.silentDurationMs || 5000);
       const key = await sha([RENDER_TAG, quality, slideRec?.sha256 || "title:" + s.title, audioRec?.sha256 || "silence", dur].join("\x1f"));
@@ -405,7 +420,7 @@ async function renderProject(pid, quality) {
     await db.put("blobs", mp4, `r:${rid}:mp4`);
     await db.put("blobs", new Blob([buildSrt(cues)], { type: "application/x-subrip" }), `r:${rid}:srt`);
     const rec = { id: rid, projectId: pid, projectRevision: p.revision, title: p.title, quality, resolution: `${q.w}x${q.h}`,
-      durationMs: offset, sceneCount: n, clipsReused: reused, aiNarration: false,
+      durationMs: offset, sceneCount: n, clipsReused: reused, aiNarration: ai,
       captionMode: "theo câu, mốc ước lượng theo tỷ lệ ký tự (chưa căn chỉnh từng từ)", timeline,
       createdAt: now(), approval: null, sizeBytes: mp4.size, platform: "browser/ffmpeg.wasm" };
     await db.put("renders", rec);
@@ -505,7 +520,7 @@ async function usage() {
 
 const health = () => ({ app: "Phuc Nguyen Studio (trình duyệt)", mode: "browser", version: VERSION, schemaVersion: SCHEMA,
   ffmpeg: "ffmpeg.wasm 0.12 (GPL)", libreoffice: false, dataDir: "IndexedDB",
-  tts: { installed: false, browser: true, engine: "VieNeu-TTS", license: "Chỉ có trong PNS Engine trên máy cá nhân", config: {} } });
+  tts: { installed: false, browser: true, bridge: true, engine: "VieNeu-TTS qua PNS Engine", license: "Giọng AI sinh trên PNS Engine của máy, gọi qua cầu nối (Cài đặt)", config: {} } });
 
 const listProjects = async (q) => {
   const ps = await db.all("projects");
@@ -521,6 +536,8 @@ export async function handle(method, rawUrl, body) {
   const parts = u.pathname.replace(/^\/?(api\/)?/, "").split("/").filter(Boolean);
   const [r0, r1, r2, r3, r4, r5] = parts;
   const M = method;
+  const vo = await (await import("./voices.js")).handle(M, parts, q, body);       // Voice Studio + giọng AI qua PNS Engine
+  if (vo !== undefined) return vo;
   const studio = await (await import("./studios.js")).handle(M, parts, q, body);   // Image/Audio/Content/Podcast/Interactive
   if (studio !== undefined) return studio;
 
@@ -529,13 +546,12 @@ export async function handle(method, rawUrl, body) {
     const ps = await listProjects(new URLSearchParams());
     const js = [...jobs.values()].sort((a, b) => b.createdAt - a.createdAt).map(pub);
     return { recent: ps.slice(0, 8), jobs: js.slice(0, 12), activeJobs: js.filter((j) => ["queued", "running"].includes(j.status)), usage: await usage(),
-      counts: { projects: ps.length, assets: (await db.keys("assets")).length, voices: 0 } };
+      counts: { projects: ps.length, assets: (await db.keys("assets")).length, voices: ((await db.get("kv", "voices")) || []).length } };
   }
   if (r0 === "settings") {
     if (M === "PUT") await db.put("kv", { pnlUrl: url(body?.app?.pnlUrl), pndUrl: url(body?.app?.pndUrl) }, "app");
     return { app: { pnlUrl: "", pndUrl: "", ...((await db.get("kv", "app")) || {}) }, tts: {}, limits: { maxUploadMB: LIMIT_MB, maxPdfPages: 300, maxScenes: MAX_SCENES } };
   }
-  if (r0 === "voices") return { voices: [], engine: health().tts };
   if (r0 === "jobs") {
     if (!r1) return [...jobs.values()].filter((j) => !q.get("projectId") || j.projectId === q.get("projectId")).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50).map(pub);
     const j = jobs.get(r1); if (!j) throw nf();
@@ -606,6 +622,5 @@ export async function handle(method, rawUrl, body) {
       if (r4 === "package") return publishPackage(r1, r3);
     }
   }
-  if (r0 === "dictionary") return [];
   throw nf("Chức năng chưa có ở chế độ trình duyệt");
 }

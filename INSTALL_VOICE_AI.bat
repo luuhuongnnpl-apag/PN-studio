@@ -7,12 +7,20 @@ if not exist ".venv\Scripts\python.exe" (
   pause & exit /b 1
 )
 echo Cai giong AI VieNeu-TTS (Apache-2.0, chay CPU, khong can API tra phi).
-echo Lan dau can Internet; trong so model (~vai tram MB) tai khi sinh giong lan dau.
-".venv\Scripts\python.exe" -m pip install -r engine\requirements-voice.txt
+echo Lan dau can Internet: cai thu vien, sau do tai trong so model (vai tram MB) tu huggingface.co.
+".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r engine\requirements-voice.txt
 if errorlevel 1 (
   echo [LOI] Cai VieNeu-TTS that bai. Giong thu am that van dung binh thuong.
   pause & exit /b 1
 )
-".venv\Scripts\python.exe" -c "import vieneu, importlib.metadata as m; print('VieNeu', m.version('vieneu'), 'OK')"
+echo.
+echo Dang tai model va chay thu mot cau (1-5 phut lan dau)...
+".venv\Scripts\python.exe" engine\warmup_voice.py v3turbo
+if errorlevel 1 (
+  echo [!] Thu vien da cai nhung chua tai/chay duoc model. Kiem tra Internet roi chay lai file nay.
+  pause & exit /b 1
+)
+echo.
 echo Xong. Dong cua so Engine dang chay (neu co) roi mo lai START_PNS.bat.
+echo Engine se tu nap san giong AI khi khoi dong de lan sinh dau tien nhanh hon.
 pause

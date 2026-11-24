@@ -17,7 +17,12 @@ export default async function voice(view) {
 
 async function voices(box) {
   const { voices: list, engine: st } = await get("api/voices");
-  const status = st.installed
+  const status = st.bridge && !st.connected
+    ? h("div", { class: "notice warn" }, h("strong", {}, "Giọng AI chạy trên PNS Engine của máy này. "),
+      st.paired ? `Chưa kết nối được (${st.lastError || "Engine đang tắt"}). ` : "Chưa ghép nối. ",
+      "Mẫu giọng vẫn lưu và quản lý được ở đây; để sinh giọng: mở START_PNS.bat → ", h("a", { href: "#/settings" }, "Cài đặt → Giọng AI qua PNS Engine"), ".",
+      h("button", { class: "btn ghost sm", style: { marginLeft: "8px" }, onclick: async () => { await get("api/voices?refresh=1"); voices(box); } }, "Kiểm tra lại"))
+    : st.installed
     ? h("div", { class: "notice ok" }, h("strong", {}, `${st.engine} ${st.version || ""} đã cài. `),
       `Cấu hình: ${st.config.mode}, ${st.config.precision}. `, st.loaded ? "Model đã nạp." : "Model sẽ nạp ở lần sinh giọng đầu tiên (lần đầu tải trọng số từ Hugging Face).",
       st.lastError && h("div", { style: { color: "var(--err)" } }, "Lỗi gần nhất: ", st.lastError),
@@ -40,7 +45,7 @@ async function voices(box) {
     h("div", { class: "row" }, h("button", { class: "btn ghost sm", onclick: () => fileInp.click() }, "Chọn file"), fileInp, recorder(setFile), picked), preview,
     h("div", { class: "grid g2" }, h("div", {}, h("label", {}, "Tên giọng"), f.name), h("div", {}, h("label", {}, "Người sở hữu giọng"), f.owner),
       h("div", {}, h("label", {}, "Cắt từ giây"), f.start), h("div", {}, h("label", {}, "đến giây (0 = hết)"), f.end)),
-    h("label", { class: "check" }, f.consent, "Tôi xác nhận có quyền sử dụng giọng nói này và đồng ý tạo âm thanh AI từ mẫu; mẫu chỉ lưu trên máy cá nhân."),
+    h("label", { class: "check" }, f.consent, "Tôi xác nhận có quyền sử dụng giọng nói này và đồng ý tạo âm thanh AI từ mẫu; mẫu chỉ lưu trên máy cá nhân (bản web: trong trình duyệt này, chỉ gửi tới PNS Engine trên chính máy khi sinh giọng)."),
     prog,
     h("button", { class: "btn gold", onclick: async () => {
       if (!file) return toast("Chọn hoặc thu mẫu giọng", "err");
@@ -69,7 +74,7 @@ function voiceCard(v, st, reload) {
     h("audio", { controls: true, src: `api/voices/${v.id}/sample`, preload: "none" }), warn,
     h("label", {}, "Thử giọng AI với câu mẫu (số và viết tắt được đọc theo từ điển)"), text,
     h("div", { class: "row", style: { marginTop: "8px" } },
-      h("button", { class: "btn sm", disabled: !st.installed, title: st.installed ? "" : "Chưa cài VieNeu-TTS", onclick: async (e) => {
+      h("button", { class: "btn sm", disabled: !st.installed, title: st.installed ? "" : st.bridge ? "Chưa kết nối PNS Engine" : "Chưa cài VieNeu-TTS", onclick: async (e) => {
         e.target.disabled = true;
         try {
           const job = await post(`api/voices/${v.id}/test`, { text: text.value });

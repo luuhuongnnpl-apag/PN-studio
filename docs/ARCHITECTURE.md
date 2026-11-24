@@ -68,3 +68,15 @@ Ghi dự án dùng kiểm tra `revision` (409 khi lệch). Thứ tự cảnh = t
 
 ## Đối sánh định hướng (không sao chép giao diện)
 Tổ chức kiểu Adobe Creative Cloud/Canva: một vỏ nền tảng, nhiều studio, thư viện tài sản dùng chung, dự án xuyên module. Lecture Studio theo mô hình cảnh của Synthesia/HeyGen; phụ đề/xuất kiểu Camtasia/CapCut; biên tập theo transcript (Descript), câu hỏi theo mốc (H5P) để ở P1/P2.
+
+
+## Cầu nối giọng AI cho bản web (v0.3.0) — `engine/pns_engine/bridge.py`, `web/js/local/bridge.js`, `web/js/local/voices.js`
+- Bản web (chế độ trình duyệt) giữ mẫu giọng trong IndexedDB; khi sinh giọng gửi `POST http://127.0.0.1:<cổng>/bridge/tts` (multipart: `text`, `raw`, `dictionary`, `ref`) → job → `GET /bridge/jobs/{id}` → `GET /bridge/jobs/{id}/audio` (WAV).
+- `/bridge/*` có cơ chế riêng trong middleware: Host vẫn phải là 127.0.0.1/localhost; Origin phải thuộc danh sách cho phép (kv `bridgeOrigins` + biến môi trường `PNS_WEB_ORIGINS`); header `X-PNS-Bridge-Key` khớp khóa (kv `bridgeKey`); preflight trả CORS + `Access-Control-Allow-Private-Network`. `/api/*` vẫn chặn mọi Origin lạ.
+- Engine chuẩn hóa mẫu (loudnorm, mono 24 kHz) và văn bản (từ điển gửi kèm hoặc từ điển của Engine) như Voice Studio; dùng chung bộ đệm đoạn TTS.
+- Bản web đánh dấu cảnh giọng AI «cũ» bằng `inputHash = sha256(văn bản, chế độ đọc, từ điển, sha mẫu giọng)` lưu trong `info` của liên kết âm thanh; kết xuất tự sinh cảnh cũ qua cầu nối.
+
+## Học liệu điện tử (v0.3.0)
+- Cấu hình: kv `elearn:<el_id>` { title, course, author, org, description, objectives[], coverAssetId, lessons[{id, title, projectId, renderId, intro, transcript, sources, questions, attachments[]}], quiz{title, passScore, questions[]}, completion{minWatch} } — cùng hợp đồng ở `studios.clean_package` (Python) và `cleanPackage` (JS).
+- Đóng gói chạy ở giao diện (`web/js/elearning/build.js`), dùng chung hai chế độ: tải video/VTT/tài liệu qua `api/...`, ghi zip theo luồng (fflate, video không nén lại). Trình học: `web/player/lesson.html` + `lesson.js` (không phụ thuộc ngoài, JSON dữ liệu trong thẻ `application/json`, chạy được dưới CSP chặt).
+- SCORM 1.2: một SCO; `imsmanifest.xml` liệt kê mọi file, `masteryscore` = điểm đạt. Trình học tìm `window.API` ở cửa sổ cha/opener; ghi `cmi.core.lesson_status` (incomplete/completed/passed/failed), `score.raw/min/max`, `lesson_location`, `suspend_data` (tiến độ nén hex ≤ 4096 ký tự).

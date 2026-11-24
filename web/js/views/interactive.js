@@ -2,6 +2,7 @@ import { downloadPost, engine, get, put } from "../api.js";
 import { ctx } from "../state.js";
 import { h, toast, errToast, fmtDur, fmtTime } from "../ui.js";
 import { projectPicker } from "./common.js";
+import { compact } from "./elearning.js";
 
 const L = "ABCDEF";
 
@@ -67,7 +68,7 @@ export default async function interactive(view, args) {
 
     const save = async () => {
       const r = await put(`api/projects/${pid}/interactive`, { renderId: rid, requireCorrect: reqC.checked, showExplain: showE.checked,
-        questions: qs.map((q) => ({ ...q, options: q.options.filter((o) => o.trim()) })) });
+        questions: qs.map(compact) });
       qs.splice(0, qs.length, ...r.questions.map((q) => ({ ...q, options: [...q.options] }))); dirty = false; draw();
       return r;
     };

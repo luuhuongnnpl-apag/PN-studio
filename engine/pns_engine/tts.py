@@ -78,6 +78,19 @@ class TTSEngine:
             self.last_error = f"Không nạp được model: {type(e).__name__}: {e}"[:500]
             raise TTSUnavailable(self.last_error) from e
 
+    def preload(self, cfg: dict) -> None:
+        """Nạp sẵn model trong nền khi Engine khởi động để lần sinh giọng đầu không phải chờ."""
+        if self.test_mode or not self.installed():
+            return
+
+        def work() -> None:
+            with self._lock:
+                try:
+                    self._load(cfg)
+                except TTSUnavailable:
+                    pass          # lỗi đã ghi vào last_error, hiển thị ở Voice Studio
+        threading.Thread(target=work, name="pns-tts-preload", daemon=True).start()
+
     # ---------- sinh giọng ----------
     def cache_key(self, text: str, voice_sha: str, cfg: dict) -> str:
         raw = json.dumps({"t": text, "v": voice_sha, "m": self.model_id(cfg), "c": cfg}, sort_keys=True,

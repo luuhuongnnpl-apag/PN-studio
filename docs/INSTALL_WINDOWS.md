@@ -11,12 +11,17 @@ Cấu hình mục tiêu: CPU 4 nhân/8 luồng, RAM 16 GB, Intel UHD (không c�
 Thiếu Python → batch báo rõ và dừng. Không cần tắt Windows Defender hay tường lửa: Engine chỉ nghe `127.0.0.1`.
 
 ## 2. Giọng AI cá nhân (tùy chọn)
-1. Chạy `INSTALL_VOICE_AI.bat` (cài `vieneu==3.8.5`, Apache-2.0, ONNX trên CPU).
-2. Mở lại `START_PNS.bat` → **Voice Studio** → thêm mẫu giọng 3–15 giây, xác nhận quyền sử dụng.
-3. Bấm **Sinh câu thử**. Lần đầu tải trọng số model từ Hugging Face (cần Internet). Giao diện hiển thị thời gian xử lý, RTF và RAM — ghi lại các số này vào báo cáo kiểm thử.
+1. Chạy `INSTALL_VOICE_AI.bat` (cài `vieneu==3.8.5`, Apache-2.0, ONNX trên CPU), sau đó tự tải model từ Hugging Face và đọc thử một câu, in thời gian nạp/sinh, RTF và RAM.
+2. Mở lại `START_PNS.bat` (Engine tự nạp sẵn model trong nền; tắt bằng biến môi trường `PNS_PRELOAD_TTS=0`) → **Voice Studio** → thêm mẫu giọng 3–15 giây, xác nhận quyền sử dụng.
+3. Bấm **Sinh câu thử**. Giao diện hiển thị thời gian xử lý, RTF và RAM — ghi lại các số này vào báo cáo kiểm thử.
 4. Chậm hoặc thiếu RAM: **Cài đặt → Giọng AI** chọn `v3 Nano`; `int8` chỉ dùng nếu CPU hỗ trợ VNNI.
 
 Nếu giọng AI lỗi, PNS báo lỗi cụ thể; giọng thu âm thật vẫn dùng bình thường.
+
+## 2b. Dùng giọng AI từ bản web (cầu nối)
+- Engine → **Cài đặt → Cầu nối bản web → Kết nối bản web với máy này** (một lần cho mỗi trình duyệt). Bản web chỉ được gọi việc sinh giọng: gửi văn bản + mẫu giọng, nhận WAV. Mẫu gửi lên bị xóa ngay sau khi sinh; file kết quả tự xóa sau 1 giờ.
+- Mặc định chỉ trang `https://luuhuongnnpl-apag.github.io` được phép; thêm trang khác (ví dụ Firebase) ở mục «Ghép nối thủ công». **Đổi khóa** khi nghi lộ khóa.
+- Chrome/Edge có thể hỏi quyền truy cập mạng cục bộ — chọn Cho phép. Safari chưa hỗ trợ.
 
 ## 3. PPTX (tùy chọn)
 Cài LibreOffice để nhập PPTX trực tiếp. Không cài thì xuất PDF từ PowerPoint (*File → Save As → PDF*) rồi nhập PDF.

@@ -15,3 +15,12 @@
 
 ## P2
 Avatar Studio (tự nguyện, gắn nhãn AI), sản xuất hàng loạt, thống kê tối thiểu, phiên bản học liệu.
+
+## v0.3.0 (24/11/2026) — đã xong
+- Cầu nối giọng AI: bản web dùng VieNeu-TTS của PNS Engine trên cùng máy (ghép nối một lần, CORS + Private Network Access).
+- Học liệu điện tử: gói web HTML và SCORM 1.2 (Moodle/LMS), câu hỏi trong video, kiểm tra cuối, tiến độ theo % đã xem.
+- INSTALL_VOICE_AI.bat tải và chạy thử model ngay khi cài; Engine nạp sẵn model khi khởi động.
+
+## Còn lại
+- Kiểm thử VieNeu-TTS thật trên máy Windows của sếp (môi trường phát triển không truy cập được huggingface.co): ghi RTF, RAM, độ giống giọng.
+- SCORM 2004 / xAPI nếu LMS của Học viện yêu cầu; nhập ngân hàng câu hỏi Azota vào bài kiểm tra cuối.

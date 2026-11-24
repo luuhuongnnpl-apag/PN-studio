@@ -1,6 +1,6 @@
 import { detectEngine, engine, get } from "./api.js";
 import { MODULES, ICONS } from "./modules.js";
-import { h, $ } from "./ui.js";
+import { h, $, toast } from "./ui.js";
 import { ctx } from "./state.js";
 import home from "./views/home.js";
 import dashboard from "./views/dashboard.js";
@@ -16,9 +16,10 @@ import audio from "./views/audio.js";
 import content from "./views/content.js";
 import podcast from "./views/podcast.js";
 import interactive from "./views/interactive.js";
+import elearning from "./views/elearning.js";
 import { unavailable, needEngine } from "./views/unavailable.js";
 
-const VIEWS = { "": home, dashboard, projects, media, voice, lecture, video, publish, settings, image, audio, content, podcast, interactive };
+const VIEWS = { "": home, dashboard, projects, media, voice, lecture, video, publish, settings, image, audio, content, podcast, interactive, elearning };
 let cleanup = null;
 
 function buildNav() {
@@ -35,8 +36,12 @@ function buildNav() {
 function engineBadge() {
   const pill = $("#engine-pill");
   if (engine.mode === "browser") {
-    pill.replaceChildren(h("div", {}, h("span", { class: "dot ok" }), "Chế độ trình duyệt"),
-      h("small", {}, "Dữ liệu lưu trên trình duyệt này · Giọng AI cần PNS Engine"));
+    const small = h("small", {}, "Dữ liệu lưu trên trình duyệt này · Giọng AI: đang kiểm tra…");
+    pill.replaceChildren(h("div", {}, h("span", { class: "dot ok" }), "Chế độ trình duyệt"), small);
+    import("./local/bridge.js").then(async (b) => {
+      const st = await b.status();
+      small.textContent = "Dữ liệu lưu trên trình duyệt này · Giọng AI: " + (st.connected ? (st.tts?.installed ? "PNS Engine sẵn sàng" : "Engine chưa cài VieNeu") : st.paired ? "Engine đang tắt" : "chưa ghép nối Engine");
+    });
   } else if (engine.available) {
     const t = engine.health.tts;
     pill.replaceChildren(h("div", {}, h("span", { class: "dot ok" }), `PNS Engine ${engine.health.version}`),
@@ -74,7 +79,6 @@ async function route() {
     if (mod && mod.status !== "ready") cleanup = unavailable(view, mod);
     else if (!VIEWS[id]) view.append(h("div", { class: "empty" }, "Không tìm thấy trang. ", h("a", { href: "#/" }, "Về trang chủ")));
     else if (id && !engine.available) cleanup = needEngine(view, mod);
-    else if (id === "voice" && engine.mode === "browser") cleanup = needEngine(view, mod, true);
     else cleanup = (await VIEWS[id](view, args, query)) || null;
   } catch (e) {
     view.append(h("div", { class: "notice err" }, "Lỗi hiển thị: ", e.message || String(e)));
@@ -95,6 +99,10 @@ async function pollJobs() {
 async function main() {
   buildNav();
   await detectEngine();
+  if (engine.mode === "browser") {                       // đường dẫn «Kết nối bản web» từ PNS Engine mang theo khóa ghép nối
+    const b = await import("./local/bridge.js");
+    if (b.consumeHash()) setTimeout(() => toast("Đã ghép nối PNS Engine trên máy — giọng AI sẵn sàng khi Engine đang chạy", "ok"), 300);
+  }
   engineBadge();
   $("#menu").onclick = () => $(".sidebar").classList.toggle("open");
   window.addEventListener("hashchange", route);

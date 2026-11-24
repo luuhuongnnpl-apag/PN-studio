@@ -230,15 +230,23 @@ async function deleteEpisode(pid, eid) {
 
 async function podcastBuild(pid) {
   return submit("podcast", async (j, tick) => {
-    const p = await getProject(pid), cfg = await podConfig(pid, p);
+    let p = await getProject(pid);
+    const cfg = await podConfig(pid, p);
+    const stale = p.scenes.filter((s) => !s.excluded && s.audioMode === "tts" && s.audioStale && s.voiceId);
+    if (stale.length) {                       // giọng AI còn thiếu: sinh qua PNS Engine nếu đang kết nối
+      const V = await import("./voices.js");
+      if ((await V.ttsStatus(true)).connected)
+        for (const [k, s] of stale.entries()) await V.generateSceneTts(pid, s, j, (f, m) => tick(0.25 * (k + f) / stale.length, `Giọng AI cảnh ${k + 1}/${stale.length}: ${m || ""}`));
+      p = await getProject(pid);
+    }
     const parts = [], skipped = []; let ai = false;
     if (cfg.introAssetId) parts.push([cfg.introAssetId, "Mở đầu"]);
     p.scenes.filter((s) => !s.excluded).forEach((s, i) => {
-      if (s.audioMode === "recorded" && s.audioAssetId) parts.push([s.audioAssetId, s.title || `Cảnh ${i + 1}`, true]);
+      if ((s.audioMode === "recorded" || (s.audioMode === "tts" && !s.audioStale)) && s.audioAssetId) parts.push([s.audioAssetId, s.title || `Cảnh ${i + 1}`, true]);
       else skipped.push(s.title || `Cảnh ${i + 1}`);
     });
     if (cfg.outroAssetId) parts.push([cfg.outroAssetId, "Kết thúc"]);
-    if (!parts.some((x) => x[2])) throw bad("Chưa có cảnh nào có bản thu âm để dựng podcast (giọng AI chỉ có ở PNS Engine)");
+    if (!parts.some((x) => x[2])) throw bad("Chưa có cảnh nào có âm thanh (thu âm thật hoặc giọng AI đã tạo) để dựng podcast");
     const segs = [], chapters = []; let t = 0;
     for (const [k, [aid, label]] of parts.entries()) {
       const a = await db.get("assets", aid); ai ||= !!a.meta.ai;
@@ -246,8 +254,8 @@ async function podcastBuild(pid) {
       segs.push({ assetId: aid, startMs: 0, endMs: dur, fadeInMs: 0, fadeOutMs: 0, gainDb: 0 });
       chapters.push({ title: label, startMs: t, endMs: t + dur + gap }); t += dur + gap;
     }
-    tick(0.05, "Nạp ffmpeg.wasm"); const f = await ffmpeg();
-    tick(0.3, "Ghép tập podcast");
+    tick(0.3, "Nạp ffmpeg.wasm"); const f = await ffmpeg();
+    tick(0.35, "Ghép tập podcast");
     const ins = await writeInputs(f, segs);
     const desc = cfg.description + (ai ? "\n\nTập này có sử dụng giọng đọc tạo bằng AI." : "");
     const e = (v) => String(v).replace(/([=;#\\\n])/g, "\\$1");
@@ -339,6 +347,46 @@ async function renderOf(pid, cfg) {
   return r;
 }
 
+// =================== HỌC LIỆU ĐIỆN TỬ (cùng hợp đồng với studios.clean_package của Engine) ===================
+const isId = (v, p) => typeof v === "string" && new RegExp(`^${p}_[0-9a-f]{16}$`).test(v);
+async function assetOk(id, kinds) { const a = typeof id === "string" ? await db.get("assets", id) : null; return a && kinds.includes(a.kind) ? a.id : null; }
+async function cleanPackage(b, id) {
+  const lessons = [];
+  for (const [k, ls] of (b.lessons || []).slice(0, 50).entries()) {
+    if (!ls || typeof ls !== "object") continue;
+    const i = k + 1;
+    if (!(await getProject(ls.projectId))) throw bad(`Bài ${i}: chọn dự án bài giảng`);
+    const r = isId(ls.renderId, "rd") ? await db.get("renders", ls.renderId) : null;
+    const att = [];
+    for (const a of (ls.attachments || []).slice(0, 20)) { const x = await assetOk(a, ["pdf", "image", "audio"]); if (x && !att.includes(x)) att.push(x); }
+    lessons.push({ id: isId(ls.id, "ls") ? ls.id : newId("ls"), title: str(ls.title, 200) || `Bài ${i}`, projectId: ls.projectId,
+      renderId: r && r.projectId === ls.projectId ? r.id : null, intro: str(ls.intro, 3000), transcript: ls.transcript !== false,
+      sources: ls.sources !== false, questions: ls.questions !== false, attachments: att });
+  }
+  if (new Set(lessons.map((x) => x.id)).size !== lessons.length) throw bad("Trùng mã bài học");
+  const qz = b.quiz || {};
+  return { id, title: str(b.title, 200) || "Học liệu chưa đặt tên", course: str(b.course, 200), author: str(b.author, 160), org: str(b.org, 200),
+    description: str(b.description, 4000), objectives: (b.objectives || []).slice(0, 20).map((o) => str(o, 300)).filter(Boolean),
+    coverAssetId: await assetOk(b.coverAssetId, ["image", "slide"]), lessons,
+    quiz: { questions: cleanQuestions(qz.questions || []), passScore: int(qz.passScore, 0, 100, 70), title: str(qz.title, 200) || "Bài kiểm tra cuối" },
+    completion: { minWatch: int(b.completion?.minWatch, 50, 100, 90) }, updatedAt: now() };
+}
+async function elearning(M, id, body) {
+  if (!id) {
+    if (M === "POST") { const pkg = await cleanPackage(body || {}, newId("el")); await db.put("kv", pkg, `elearn:${pkg.id}`); return pkg; }
+    const out = [];
+    for (const k of await db.keys("kv")) if (typeof k === "string" && k.startsWith("elearn:")) {
+      const p = await db.get("kv", k); out.push({ id: p.id, title: p.title, course: p.course, updatedAt: p.updatedAt, lessons: p.lessons.length });
+    }
+    return out.sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+  const cur = isId(id, "el") ? await db.get("kv", `elearn:${id}`) : null;
+  if (!cur) throw nf("Không tìm thấy học liệu");
+  if (M === "PUT") { const pkg = await cleanPackage(body || {}, id); await db.put("kv", pkg, `elearn:${id}`); return pkg; }
+  if (M === "DELETE") { await db.del("kv", `elearn:${id}`); return { ok: true }; }
+  return cur;
+}
+
 // =================== định tuyến ===================
 // Trả về undefined nếu đường dẫn không thuộc các studio này.
 export async function handle(M, parts, q, body) {
@@ -350,6 +398,7 @@ export async function handle(M, parts, q, body) {
   if (r0 === "assets" && r2 === "peaks") return peaks(r1, +q.get("n") || 800);
   if (r0 === "audio" && r1 === "edit") return audioEdit(body || {});
   if (r0 === "content" && r1 === "parse") return { scenes: parseScript(String(body?.text || "")) };
+  if (r0 === "elearning") return elearning(M, r1, body);
   if (r0 !== "projects" || !r1 || !["content", "script.md", "podcast", "podcasts", "interactive"].includes(r2)) return undefined;
 
   const p = await getProject(r1);
@@ -420,6 +469,6 @@ export async function onDeleteProject(pid) {
 }
 export async function usedBy(id) {
   const out = [];
-  for (const k of await db.keys("kv")) if (typeof k === "string" && k.startsWith("podcast:") && JSON.stringify(await db.get("kv", k)).includes(id)) out.push(k.slice(8));
+  for (const k of await db.keys("kv")) if (typeof k === "string" && (k.startsWith("podcast:") || k.startsWith("elearn:")) && JSON.stringify(await db.get("kv", k)).includes(id)) out.push(k.split(":")[1]);
   return out;
 }

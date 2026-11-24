@@ -250,3 +250,30 @@ def test_content_check_flags_missing_document(env):
     row = c.get(f"/api/projects/{p['id']}/content/check").json()["scenes"][0]
     assert row["documents"] == ["102/2024/NĐ-CP"] and row["articles"] == ["5", "12"]
     assert row["issues"] == ["Chưa có trong ghi chú căn cứ: Điều 12"]
+
+
+def test_elearning_crud(env):
+    c, fx = env["c"], env["fx"]
+    pdf = up(c, fx / "s.pdf")
+    cover = up(c, fx / "anh.jpg")
+    p = c.post("/api/projects", json={"title": "Bài 1", "scenes": [{"title": "A", "scriptOriginal": "x"}]}).json()
+    assert c.post("/api/elearning", json={"lessons": [{"projectId": "pj_0000000000000000"}]}).status_code == 422
+    pk = c.post("/api/elearning", json={"title": "Học liệu thừa kế", "objectives": ["Hiểu di sản", " "], "coverAssetId": cover["id"],
+                                        "lessons": [{"projectId": p["id"], "renderId": "rd_0000000000000000", "attachments": [pdf["id"], pdf["id"], "as_x"]}],
+                                        "quiz": {"passScore": 150, "questions": [{"text": "Q?", "options": ["a", "b"], "correct": 1}]}}).json()
+    ls = pk["lessons"][0]
+    assert pk["objectives"] == ["Hiểu di sản"] and ls["renderId"] is None and ls["attachments"] == [pdf["id"]]
+    assert re.fullmatch(r"ls_[0-9a-f]{16}", ls["id"]) and pk["quiz"]["passScore"] == 100 and pk["completion"]["minWatch"] == 90
+    assert c.get("/api/elearning").json()[0]["lessons"] == 1
+    assert c.get(f"/api/assets/{pdf['id']}/usage").json()["projects"] == [pk["id"]]
+    upd = c.put(f"/api/elearning/{pk['id']}", json={**pk, "title": "Mới", "completion": {"minWatch": 10}}).json()
+    assert upd["title"] == "Mới" and upd["lessons"][0]["id"] == ls["id"] and upd["completion"]["minWatch"] == 50
+    assert c.delete(f"/api/elearning/{pk['id']}").status_code == 200
+    assert c.get(f"/api/elearning/{pk['id']}").status_code == 404
+
+
+def test_question_requires_valid_answer():
+    for bad in (-1, 2, True, None, "0"):
+        with pytest.raises(ValueError):
+            studios.clean_questions([{"text": "Q", "options": ["a", "b"], "correct": bad}])
+    assert studios.clean_questions([{"text": "Q", "options": ["a", "b"], "correct": 1}])[0]["correct"] == 1

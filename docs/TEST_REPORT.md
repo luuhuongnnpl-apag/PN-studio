@@ -49,3 +49,12 @@ Chưa dùng PDF Thừa kế thật và mẫu `PNL_Voice_001.wav` (chủ sở h�
 | Interactive | PASS | Câu thiếu phương án/đáp án → 422; trình phát dừng đúng mốc, chấm đúng/sai; nội dung `</script><script>` không chèn được mã; gói chỉ tải với bản đã duyệt |
 
 Giới hạn: chưa chạy trên Windows thật; chế độ trình duyệt chuẩn hóa bản thu gốc theo RMS (không phải EBU R128) như trước, còn bản xuất của Audio/Podcast Studio dùng loudnorm −16 LUFS ở cả hai chế độ; trên Firebase (CSP chặn script nội tuyến) trình phát dùng file `player/interactive.js` ngoài nên vẫn chạy; nghe thử MP3 trên ứng dụng podcast thật chưa làm; Avatar Studio vẫn chưa mở.
+
+## Bổ sung v0.3.0 (24/11/2026) — cầu nối giọng AI cho bản web, Học liệu điện tử
+- `pytest engine/tests` — 24/24 PASS (thêm `test_bridge.py` 4 test; `test_studios.py` thêm CRUD học liệu và kiểm tra đáp án).
+- `tools/bridge_smoke.py` (bản web ↔ Engine thử nghiệm): ghép nối qua đường dẫn (khóa tự xóa khỏi URL) → thêm mẫu giọng trong trình duyệt → sinh câu thử qua Engine → dự án 2 cảnh giọng AI kết xuất (tự sinh giọng, `aiNarration` = true, văn bản đọc đã chuẩn hóa «Bộ luật Dân sự», «sáu trăm mười hai») → sửa lời cảnh 2 chỉ làm cảnh 2 «cũ» → tạo lại từ Lecture Studio. 0 lỗi console.
+- `tools/elearning_smoke.py`, chạy đạt ở **cả hai chế độ**: soạn học liệu 2 bài + tài liệu PDF + 3 câu nhập nhanh (`*A.`, `Đáp án: B`, dấu `*` cuối dòng) → Kiểm tra → Xem thử (câu hỏi tự dừng trong video) → gói web và gói SCORM 1.2 → giải nén chạy trong LMS giả lập (`window.API`): trạng thái `incomplete` khi chưa làm kiểm tra, `passed` + `score.raw` = 100 sau khi nộp, `suspend_data` 164 ký tự.
+- Hồi quy: `ui_smoke.py`, `browser_mode_smoke.py`, `ui_smoke_studios.py` (hai chế độ) đều 0 lỗi.
+- Sửa lỗi phát hiện khi kiểm thử: Engine nhận `correct = -1` thành đáp án A (nay báo lỗi); bỏ phương án trống làm lệch đáp án đúng (nay giữ đúng vị trí); tên file câu thử giọng bị ghi đè ở bản web.
+
+Giới hạn: môi trường phát triển không truy cập được huggingface.co nên chưa chạy model VieNeu thật (đã đối chiếu chữ ký API gói `vieneu` 3.8.5: `Vieneu(mode, backend="onnx", precision, threads)`, `infer(text, ref_audio, denoise)`, `save`); kết nối bản web công khai → 127.0.0.1 (Private Network Access) chỉ kiểm được phần tiêu đề CORS bằng test tự động, cần thử trên Chrome/Edge thật; SCORM mới thử với LMS giả lập, chưa thử trên Moodle của Học viện.

@@ -14,6 +14,7 @@ export const ICONS = {
   image: I('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/>'),
   podcast: I('<circle cx="12" cy="11" r="3"/><path d="M6.5 16a8 8 0 1 1 11 0M12 14v7"/>'),
   avatar: I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  elearning: I('<path d="M2 8l10-5 10 5-10 5z"/><path d="M6 10v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 8v6"/>'),
   interactive: I('<path d="M9 11V5a2 2 0 0 1 4 0v6"/><path d="M13 9a2 2 0 0 1 4 0v4a7 7 0 0 1-7 7h-1a5 5 0 0 1-4-2l-2-3a2 2 0 0 1 3-2l1 1"/>'),
   publish: I('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>'),
   settings: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
@@ -32,6 +33,7 @@ export const MODULES = [
   { id: "podcast", group: "Studio", name: "Podcast Studio", status: "ready", desc: "Tập podcast từ âm thanh các cảnh: chương mục, ảnh bìa, MP3, mục RSS." },
   { id: "avatar", group: "Studio", name: "Avatar Studio", status: "p2", desc: "Người dẫn ảo trên cơ sở tự nguyện, có nhãn AI." },
   { id: "interactive", group: "Studio", name: "Interactive Studio", status: "ready", desc: "Câu hỏi trắc nghiệm tự dừng theo mốc video; gói HTML độc lập." },
+  { id: "elearning", group: "Studio", name: "Học liệu điện tử", status: "ready", desc: "Ghép video bài giảng thành học liệu: mục lục, lời giảng, căn cứ, tài liệu, kiểm tra; gói web hoặc SCORM 1.2." },
   { id: "publish", group: "Phát hành", name: "Trung tâm xuất bản", status: "ready", desc: "Duyệt bản kết xuất, phiên bản, gói xuất cho PNL/PND." },
   { id: "settings", group: "Phát hành", name: "Cài đặt", status: "ready", desc: "Engine, lưu trữ, giọng AI, liên kết PNL/PND, sao lưu." },
 ];

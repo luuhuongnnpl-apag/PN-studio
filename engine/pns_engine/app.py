@@ -11,7 +11,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Request, UploadFil
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import media, studios
+from . import bridge, media, studios
 from .config import WEB_DIR, Settings
 from .core import PNSEngine
 from .media import MediaError
@@ -37,6 +37,15 @@ def create_app(settings: Settings | None = None, extra_hosts: tuple[str, ...] = 
         host = request.headers.get("host", "")
         if host not in allowed_hosts:                      # chống DNS rebinding
             return JSONResponse({"error": "Host không được phép"}, status_code=403)
+        if request.url.path.startswith("/bridge/"):         # cầu nối giọng AI cho bản web (khóa ghép nối + CORS)
+            blocked = bridge.guard(eng, request)
+            if blocked is not None:
+                blocked.headers["X-Content-Type-Options"] = "nosniff"
+                return blocked
+            resp = bridge.add_cors(request, await call_next(request))
+            resp.headers["X-Content-Type-Options"] = "nosniff"
+            resp.headers["Cache-Control"] = "no-store"
+            return resp
         origin = request.headers.get("origin")
         if origin and origin not in allowed_origins:        # chống CSRF từ trang lạ
             return JSONResponse({"error": "Origin không được phép"}, status_code=403)
@@ -290,6 +299,45 @@ def create_app(settings: Settings | None = None, extra_hosts: tuple[str, ...] = 
         else:
             raise HTTPException(404)
         return FileResponse(dst, media_type="image/jpeg")
+
+    # ---------------- Học liệu điện tử ----------------
+    @app.get("/api/elearning")
+    def el_list():
+        return studios.elearning_list(eng)
+
+    @app.post("/api/elearning")
+    def el_create(body: dict = Body(...)):
+        return studios.elearning_save(eng, None, body)
+
+    @app.get("/api/elearning/{eid}")
+    def el_get(eid: str):
+        return studios.elearning_get(eng, eid)
+
+    @app.put("/api/elearning/{eid}")
+    def el_put(eid: str, body: dict = Body(...)):
+        return studios.elearning_save(eng, eid, body)
+
+    @app.delete("/api/elearning/{eid}")
+    def el_delete(eid: str):
+        studios.elearning_delete(eng, eid)
+        return {"ok": True}
+
+    # ---------------- Cầu nối bản web ----------------
+    @app.get("/api/bridge")
+    def bridge_info():
+        return bridge.info(eng)
+
+    @app.post("/api/bridge/rotate")
+    def bridge_rotate():
+        bridge.rotate_key(eng)
+        return bridge.info(eng)
+
+    @app.put("/api/bridge/origins")
+    def bridge_origins(body: dict = Body(...)):
+        bridge.set_origins(eng, body.get("origins"))
+        return bridge.info(eng)
+
+    bridge.register(app, eng)
 
     # ---------------- Image Studio ----------------
     @app.post("/api/image/transform")

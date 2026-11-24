@@ -227,7 +227,7 @@ class Store:
         used = {r["id"] for r in self.q("SELECT id,data FROM projects") if aid in r["data"]}
         used |= {r["project_id"] for r in self.q("SELECT project_id FROM scene_audio WHERE asset_id=?", (aid,))}
         used |= {r["key"].split(":", 1)[1] for r in self.q(
-            "SELECT key FROM kv WHERE key LIKE 'podcast:%' AND value LIKE ?", (f"%{aid}%",))}
+            "SELECT key FROM kv WHERE (key LIKE 'podcast:%' OR key LIKE 'elearn:%') AND value LIKE ?", (f"%{aid}%",))}
         return sorted(used)
 
     def delete_asset(self, aid: str) -> None:
